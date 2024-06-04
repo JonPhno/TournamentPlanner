@@ -1,0 +1,49 @@
+﻿@using Microsoft.EntityFrameworkCore
+@using TournamentPlanner.Data
+@attribute [StreamRendering]
+@rendermode InteractiveServer
+@inject ApplicationDbContext context
+
+@if (GameMode != null)
+{
+
+    <h1>@GameMode.Name</h1>
+
+    <div class="game-mode-details">
+        <div>
+            <div class="game-mode-details-section">
+                <span>Description <input type="text" @bind="GameMode.Description" /></span>
+                <span>Number of team <input type="number" @bind="GameMode.PlayerPerTeamCount" /></span>
+                <span>Number of player per team<input type="number" @bind="GameMode.TeamCount" /></span>
+                <span>Number of player per team<input type="number" @bind="GameMode.TeamCount" /></span>
+            </div>
+
+        </div>
+
+        <button @onclick="Save" class="btn btn-primary"><i class="bi bi-floppy-fill"></i> Save </button>
+
+    </div>
+
+}
+
+@code {
+    [Parameter]
+    public GameMode GameMode { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+    }
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+    }
+
+    private void Save()
+    {
+        context.Update(GameMode);
+        context.SaveChanges();
+    }
+
+
+}

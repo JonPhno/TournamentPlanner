@@ -1,0 +1,101 @@
+﻿@using Microsoft.EntityFrameworkCore
+@using TournamentPlanner.Data
+@attribute [StreamRendering]
+@rendermode InteractiveServer
+@inject ApplicationDbContext context
+
+@if (Team != null)
+{
+    <h1>@Team.Name</h1>
+
+    <div class="game-mode-details">
+        <div>
+            <div class="game-mode-details-section">
+                <span>Players</span>
+                <div class="game-mode-list">
+                    @foreach (var player in selectedPlayers)
+                    {
+                        <div class="list-element" @onclick="() => RemovePlayer(player)">
+                            <span>@player.Name</span>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="game-mode-details-section">
+                <span>Add player to team</span>
+                <input type="text" @oninput="(ea) => {
+        SearchText = ea.Value.ToString();
+        LoadAvailablePlayers();
+        }" />
+
+                <div class="game-mode-list">
+                    @foreach (var player in availablePlayers)
+                    {
+                        <div class="list-element" @onclick="() => AddPlayer(player)">
+                            <span>@player.Name</span>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+}
+@code {
+    [Parameter]
+    public Team Team { get; set; }
+    private Player selectedPlayer;
+    private string question = "";
+
+    private List<Player> selectedPlayers;
+    private List<Player> availablePlayers;
+    private List<Player> players;
+
+    private string SearchText = "";
+
+    protected override void OnParametersSet()
+    {
+        selectedPlayers = context.Players.Where(x => context.TeamPlayers.Any(t => t.PlayerId == x.Id && t.TeamId == Team.Id)).ToList();
+        players = context.Players.ToList();
+        LoadAvailablePlayers();
+        base.OnParametersSet();
+    }
+
+    private void LoadAvailablePlayers()
+    {
+        availablePlayers = players.Where(p => !selectedPlayers.Any(sp => sp.Id == p.Id)).ToList();
+
+        if (SearchText.Length > 0)
+        {
+            availablePlayers = availablePlayers.Where(ap => ap.Name.ToLower().Contains(SearchText.ToLower())).ToList(); ;
+        }
+    }
+
+    private void SelectPlayer(Player player)
+    {
+        selectedPlayer = player;
+        // displayTeamDetails = true;
+        question = $"Do you really want to remove '{selectedPlayer.Name}' from the team ?";
+
+    }
+    private void AddPlayer(Player player)
+    {
+        selectedPlayers.Add(player);
+        LoadAvailablePlayers();
+
+        TeamPlayer tp = new TeamPlayer() { PlayerId = player.Id, TeamId = Team.Id };
+        context.TeamPlayers.Add(tp);
+        context.SaveChanges();
+    }
+
+    private void RemovePlayer(Player player)
+    {
+        selectedPlayers.Remove(player);
+        LoadAvailablePlayers();
+        context.TeamPlayers.Remove(context.TeamPlayers.FirstOrDefault(tp => tp.TeamId == Team.Id && tp.PlayerId == player.Id));
+        context.SaveChanges();
+    }
+}

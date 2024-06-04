@@ -1,0 +1,31 @@
+﻿@rendermode InteractiveServer
+
+
+<div class="pop-up-background">
+    <div class="pop-up">
+        <h3>@Question</h3>
+
+        <div>
+            <button class="btn btn-danger" @onclick="OnYes"> Yes </button>
+            <button class="btn btn-primary" @onclick="OnNo"> No </button>
+        </div>
+    </div>
+</div>
+
+
+@code {
+    [Parameter] public EventCallback<bool> OnPopUpClose { get; set; }
+    [Parameter] public string Question { get; set; }
+
+
+    private void OnYes()
+    {
+        OnPopUpClose.InvokeAsync(true);
+    }
+
+    private void OnNo()
+    {
+        OnPopUpClose.InvokeAsync(false);
+
+    }
+}

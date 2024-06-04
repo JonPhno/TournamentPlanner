@@ -1,0 +1,119 @@
+﻿@using Microsoft.EntityFrameworkCore
+@using TournamentPlanner.Data
+@attribute [StreamRendering]
+@rendermode InteractiveServer
+@inject ApplicationDbContext context
+
+@if (GameMap != null)
+{
+
+    <h1>@GameMap.Name</h1>
+
+    <div class="game-mode-details">
+        <div>
+            <div class="game-mode-details-section">
+                <span>Type of game mode list</span>
+                <InputRadioGroup @bind-Value="GameMap.GameModeListType">
+                    @foreach (var gmlt in Enum.GetValues(typeof(GameModeListType)).Cast<GameModeListType>())
+                    {
+                        <span><InputRadio Value="gmlt" /> @gmlt.ToString()</span>
+                    }
+
+                </InputRadioGroup>
+            </div>
+
+            @if (gameModes != null)
+            {
+                <div class="game-mode-details-section">
+                    <span>Selected game modes</span>
+                    <div class="game-mode-lists">
+                        <div class="game-mode-list">
+                            @foreach (var item in selectedGameModes)
+                            {
+                                <div class="list-element" @onclick="() => {Remove(item);}">
+                                    @item.Name
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+                <div class="game-mode-details-section">
+                    <span>Available game modes</span>
+                    <div class="game-mode-list">
+                        @foreach (var item in availableGameModes)
+                        {
+                            <div class="list-element" @onclick="() => {Add(item);}">
+                                @item.Name
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
+        </div>
+
+        <button @onclick="Save" class="btn btn-primary"><i class="bi bi-floppy-fill"></i> Save </button>
+
+    </div>
+
+}
+
+@code {
+    [Parameter]
+    public Map GameMap { get; set; }
+
+    private List<GameMode> gameModes;
+    private List<GameMode> selectedGameModes;
+    private List<GameMode> availableGameModes;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+    }
+
+    protected override void OnParametersSet()
+    {
+        gameModes = context.GameModes.Where(x => x.Game == GameMap.Game).ToList();
+        selectedGameModes = context.GameModes.Where(x => x.MapGameModes.Any(y => y.MapId == GameMap.Id)).ToList();
+        availableGameModes = gameModes.Where(x => !selectedGameModes.Any(y => y.Id == x.Id)).ToList();
+        base.OnParametersSet();
+    }
+
+    private void Save()
+    {
+        context.Update(GameMap);
+
+        var oldGMs = context.GameModes.Where(x => x.MapGameModes.Any(y => y.MapId == GameMap.Id)).ToList();
+
+        var GMsToDelete = oldGMs.Where(x => availableGameModes.Any(y => x.Id == y.Id)).ToList();
+        var GMSToAdd = selectedGameModes.Where(x => !oldGMs.Any(y => y.Id == x.Id)).ToList();
+
+        foreach (var gm in GMsToDelete)
+        {
+            context.MapGameModes.Remove(context.MapGameModes.FirstOrDefault(x => x.GameModeId == gm.Id && x.MapId == GameMap.Id));
+        }
+
+        foreach (var gm in GMSToAdd)
+        {
+            MapGameMode mgm = new MapGameMode() { MapId = GameMap.Id, GameModeId = gm.Id };
+            context.MapGameModes.Add(mgm);
+        }
+
+        context.SaveChanges();
+        OnParametersSet();
+    }
+
+    private void Add(GameMode gameMode)
+    {
+        selectedGameModes.Add(gameMode);
+        availableGameModes.Remove(gameMode);
+    }
+
+    private void Remove(GameMode gameMode)
+    {
+        availableGameModes.Add(gameMode);
+        selectedGameModes.Remove(gameMode);
+    }
+
+
+}

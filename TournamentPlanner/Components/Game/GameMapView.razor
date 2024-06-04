@@ -1,0 +1,106 @@
+﻿@using Microsoft.EntityFrameworkCore
+@using TournamentPlanner.Data
+@attribute [StreamRendering]
+@rendermode InteractiveServer
+@inject ApplicationDbContext context
+
+
+    @if (Game != null)
+{
+    <span>Maps</span>
+
+    <div class="narrow-list-container debug-border game-mode-list-container">
+        <div class="list debug-border">
+            <div class="list-action-buttons-section">
+                <button @onclick="OpenCreatePopUp" class="btn btn-success"><i class="bi bi-plus-circle-fill"></i> Add</button>
+                <button @onclick="OpenDeletePopUp" class="btn btn-danger"><i class="bi bi-dash-circle-fill"></i> Delete</button>
+            </div>
+
+            @foreach (var gameMap in gameMaps)
+            {
+                <div class="list-element" @onclick="() => SelectGameMap(gameMap)">
+                    <span>@gameMap.Name</span>
+                </div>
+
+            }
+        </div>
+
+        <div class="details debug-border">
+            @if (displayGameMapDetails)
+            {
+                <GameMapDetails GameMap="selectedGameMap"></GameMapDetails>
+            }
+        </div>
+    </div>
+}
+
+@if (displayCreatePopUp)
+{
+    <CreateGameMap OnPopUpClose="CloseCreatePopUp" Game="Game"></CreateGameMap>
+}
+
+@if (displayDeletePopUp)
+{
+    <YesNoPopUp Question="@question" OnPopUpClose="(args) => CloseDeletePopUp(args)"></YesNoPopUp>
+}
+
+@code {
+    [Parameter]
+    public Game? Game { get; set; }
+
+    private List<Map> gameMaps;
+    private Map? selectedGameMap;
+    private bool displayGameMapDetails = false;
+    private bool displayCreatePopUp = false;
+    private bool displayDeletePopUp = false;
+    private string question = "";
+
+    protected override void OnParametersSet()
+    {
+        LoadGameMaps();
+        base.OnParametersSet();
+    }
+
+    private async Task LoadGameMaps()
+    {
+        if (Game != null)
+            gameMaps = context.Maps.Where(x => x.Game.Id == Game.Id).ToList();
+    }
+
+    private void SelectGameMap(Map gameMap)
+    {
+        displayGameMapDetails = true;
+        selectedGameMap = gameMap;
+        question = $"Do you really want to delete the map '{selectedGameMap.Name}'?";
+
+    }
+
+    private void OpenCreatePopUp()
+    {
+        displayCreatePopUp = true;
+    }
+
+    private async Task CloseCreatePopUp()
+    {
+        displayCreatePopUp = false;
+        await LoadGameMaps();
+    }
+
+    private async Task OpenDeletePopUp()
+    {
+        displayDeletePopUp = true;
+    }
+
+    private async Task CloseDeletePopUp(bool args)
+    {
+        displayDeletePopUp = false;
+        if (args)
+        {
+            context.Maps.Remove(selectedGameMap);
+            context.SaveChanges();
+            selectedGameMap = null;
+            displayGameMapDetails = false;
+        }
+        await LoadGameMaps();
+    }
+}

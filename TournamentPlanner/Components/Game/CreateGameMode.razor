@@ -1,0 +1,56 @@
+﻿@using Microsoft.EntityFrameworkCore
+@using TournamentPlanner.Data
+@attribute [StreamRendering]
+@rendermode InteractiveServer
+@inject ApplicationDbContext context
+
+
+<div class="pop-up-background">
+    <div class="pop-up">
+        <h3>Add Game Mode</h3>
+
+        <span>Name <input type="text" placeholder="Game mode's name" @bind="name" @oninput="(EventArgs) => { name = EventArgs.Value.ToString();}" /></span>
+        <span>Description<input type="text" placeholder="Description" @bind="description" @oninput="(EventArgs) => { description = EventArgs.Value.ToString();}" /></span>
+        <span>Number of team<input type="number" placeholder="Team count" @bind="teamCount" @oninput="(EventArgs) => { teamCount = EventArgs.Value as int?;}" /></span>
+        <span>Number of player per team<input type="number" placeholder="Player count per team" @bind="playerCountPerTeam" @oninput="(EventArgs) => { playerCountPerTeam = EventArgs.Value as int?;}" /></span>
+
+        <div>
+            <button class="btn btn-success" @onclick="AddGameMode"> Add </button>
+            <button class="btn btn-danger" @onclick="Cancel"> Cancel </button>
+        </div>
+    </div>
+</div>
+
+
+@code {
+    [Parameter] public Game Game { get; set; }
+    [Parameter] public EventCallback OnPopUpClose { get; set; }
+
+    private string name = "";
+    private string description = "";
+    private int? playerCountPerTeam = 0;
+    private int? teamCount = 0;
+
+
+    private void AddGameMode()
+    {
+        context.Add(new Data.GameMode() { Game = Game,Name = name, Description = description, TeamCount = (int)teamCount, PlayerPerTeamCount = (int)playerCountPerTeam });
+        context.SaveChanges();
+        name = "";
+        ClosePopOp();
+    }
+
+    private void Cancel()
+    {
+        name = "";
+        description = "";
+        playerCountPerTeam = 0;
+        teamCount = 0;
+        ClosePopOp();
+    }
+
+    private Task ClosePopOp()
+    {
+        return OnPopUpClose.InvokeAsync();
+    }
+}

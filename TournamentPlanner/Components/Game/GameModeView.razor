@@ -1,0 +1,108 @@
+﻿@using Microsoft.EntityFrameworkCore
+@using TournamentPlanner.Data
+@attribute [StreamRendering]
+@rendermode InteractiveServer
+@inject ApplicationDbContext context
+
+
+@if (Game != null)
+{
+    @if (Game != null)
+    {
+        <span>Game Modes</span>
+
+        <div class="narrow-list-container debug-border game-mode-list-container">
+            <div class="list debug-border">
+                <div class="list-action-buttons-section">
+                    <button @onclick="OpenCreatePopUp" class="btn btn-success"><i class="bi bi-plus-circle-fill"></i> Add</button>
+                    <button @onclick="OpenDeletePopUp" class="btn btn-danger"><i class="bi bi-dash-circle-fill"></i> Delete</button>
+                </div>
+
+                @foreach (var gameMode in gameModes)
+                {
+                    <div class="list-element" @onclick="() => SelectGameMode(gameMode)">
+                        <span>@gameMode.Name</span>
+                    </div>
+
+                }
+            </div>
+
+            <div class="details debug-border">
+                @if (displayGameModeDetails)
+                {
+                    <GameModeDetails GameMode="selectedGameMode"></GameModeDetails>
+                }
+            </div>
+        </div>
+    }
+}
+
+@if (displayCreatePopUp)
+{
+    <CreateGameMode OnPopUpClose="CloseCreatePopUp" Game="Game"></CreateGameMode>
+}
+
+@if (displayDeletePopUp)
+{
+    <YesNoPopUp Question="@question" OnPopUpClose="(args) => CloseDeletePopUp(args)"></YesNoPopUp>
+}
+@code {
+    [Parameter]
+    public Game? Game { get; set; }
+
+    private List<GameMode> gameModes;
+    private GameMode? selectedGameMode;
+    private bool displayGameModeDetails = false;
+    private bool displayCreatePopUp = false;
+    private bool displayDeletePopUp = false;
+    private string question = "";
+
+    protected override void OnParametersSet()
+    {
+        LoadGameModes();
+        base.OnParametersSet();
+    }
+
+    private async Task LoadGameModes()
+    {
+        if (Game != null)
+            gameModes = context.GameModes.Where(x => x.Game.Id == Game.Id).ToList();
+    }
+
+    private void SelectGameMode(GameMode gameMode)
+    {
+        displayGameModeDetails = true;
+        selectedGameMode = gameMode;
+        question = $"Do you really want to delete the game mode '{selectedGameMode.Name}'?";
+
+    }
+
+    private void OpenCreatePopUp()
+    {
+        displayCreatePopUp = true;
+    }
+
+    private async Task CloseCreatePopUp()
+    {
+        displayCreatePopUp = false;
+        await LoadGameModes();
+    }
+
+    private async Task OpenDeletePopUp()
+    {
+        displayDeletePopUp = true;
+    }
+
+    private async Task CloseDeletePopUp(bool args)
+    {
+        displayDeletePopUp = false;
+        if (args)
+        {
+            context.GameModes.Remove(selectedGameMode);
+            context.SaveChanges();
+            selectedGameMode = null;
+            displayGameModeDetails = false;
+        }
+        await LoadGameModes();
+    }
+}

@@ -1,0 +1,56 @@
+﻿@using Microsoft.EntityFrameworkCore
+@using TournamentPlanner.Data
+@attribute [StreamRendering]
+@rendermode InteractiveServer
+@inject ApplicationDbContext context
+
+
+<div class="pop-up-background">
+    <div class="pop-up">
+        <h3>Add Map</h3>
+
+        <span>Name <input type="text" placeholder="Map's name" @bind="name" @oninput="(EventArgs) => { name = EventArgs.Value.ToString();}" /></span>
+        <span>Description <input type="text" placeholder="Map's description" @bind="description" @oninput="(EventArgs) => { description = EventArgs.Value.ToString();}" /></span>
+        <span>Min players<input type="number" placeholder="Team count" @bind="minPlayers" @oninput="(EventArgs) => { minPlayers = EventArgs.Value as int?;}" /></span>
+        <span>Max Players<input type="number" placeholder="Player count per team" @bind="maxPlayers" @oninput="(EventArgs) => { maxPlayers = EventArgs.Value as int?;}" /></span>
+
+        <div>
+            <button class="btn btn-success" @onclick="AddGameMode"> Add </button>
+            <button class="btn btn-danger" @onclick="Cancel"> Cancel </button>
+        </div>
+    </div>
+</div>
+
+
+@code {
+    [Parameter] public Game Game { get; set; }
+    [Parameter] public EventCallback OnPopUpClose { get; set; }
+
+    private string name = "";
+    private string description = "";
+    private int? maxPlayers = 0;
+    private int? minPlayers = 0;
+
+
+    private void AddGameMode()
+    {
+        context.Add(new Data.Map() { Game = Game, Name = name/*, Description = description ,minPlayers = (int)minPlayers, PlayerPerminPlayers = (int)maxPlayers */ });
+        context.SaveChanges();
+        name = "";
+        ClosePopOp();
+    }
+
+    private void Cancel()
+    {
+        name = "";
+        description = "";
+        maxPlayers = 0;
+        minPlayers = 0;
+        ClosePopOp();
+    }
+
+    private Task ClosePopOp()
+    {
+        return OnPopUpClose.InvokeAsync();
+    }
+}

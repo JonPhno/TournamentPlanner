@@ -1,0 +1,20 @@
+﻿@using Microsoft.EntityFrameworkCore
+@using TournamentPlanner.Data
+@* @page "/gamedetails/{name}" *@
+@attribute [StreamRendering]
+@rendermode InteractiveServer
+@inject ApplicationDbContext context
+
+
+@code {
+   
+
+    protected override async Task OnInitializedAsync()
+    {
+        // using var context = DbFactory.CreateDbContext();
+    }
+
+    
+
+    
+}

@@ -1,0 +1,47 @@
+﻿@using Microsoft.EntityFrameworkCore
+@using TournamentPlanner.Data
+@attribute [StreamRendering]
+@rendermode InteractiveServer
+@inject ApplicationDbContext context
+
+
+<div class="pop-up-background">
+    <div class="pop-up">
+        <h3>Add Player</h3>
+
+        <input id="" type="text" placeholder="Player's name" @bind="playerName" @oninput="(EventArgs) => { playerName = EventArgs.Value.ToString();}" />
+
+        <div>
+            <button class="btn btn-success" @onclick="AddPlayer"> Add </button>
+            <button class="btn btn-danger" @onclick="Cancel"> Cancel </button>
+        </div>
+    </div>
+</div>
+
+
+@playerName
+@code {
+    [Parameter] public EventCallback OnPopUpClose { get; set; }
+
+    private string playerName = "";
+
+
+    private void AddPlayer()
+    {
+        context.Add(new Player() { Name = playerName });
+        context.SaveChanges();
+        playerName = "";
+        ClosePopOp();
+    }
+
+    private void Cancel()
+    {
+        playerName = "";
+        ClosePopOp();
+    }
+
+    private Task ClosePopOp()
+    {
+        return OnPopUpClose.InvokeAsync();
+    }
+}

@@ -1,0 +1,108 @@
+﻿@using Microsoft.EntityFrameworkCore
+@using TournamentPlanner.Components.Teams
+@using TournamentPlanner.Data
+@page "/teams"
+@attribute [StreamRendering]
+@rendermode InteractiveServer
+@inject ApplicationDbContext context
+<PageTitle>Teams</PageTitle>
+<h1>Teams</h1>
+
+
+
+<div class="narrow-list-container debug-border game-list-container">
+    <div class="list debug-border">
+        <div class="list-action-buttons-section">
+            <button @onclick="OpenCreatePopUp" class="btn btn-success"><i class="bi bi-plus-circle-fill"></i> Add</button>
+            <button @onclick="OpenDeletePopUp" class="btn btn-danger"><i class="bi bi-dash-circle-fill"></i> Delete</button>
+        </div>
+
+        @if (teams != null)
+        {
+
+            foreach (var team in teams)
+            {
+                <div class="list-element" @onclick="() => SelectTeam(team)">
+                    <span>@team.Name</span>
+                </div>
+
+            }
+        }
+    </div>
+
+    <div class="details debug-border">
+
+        @if (displayTeamDetails)
+        {
+            <TeamPlayerList Team="selectedTeam"></TeamPlayerList>
+        }
+    </div>
+</div>
+
+@if (displayCreatePopUp)
+{
+    <CreateTeam OnPopUpClose="CloseCreatePopUp"></CreateTeam>
+}
+
+@if (displayDeletePopUp)
+{
+    <YesNoPopUp Question="@question" OnPopUpClose="(args) => CloseDeletePopUp(args)"></YesNoPopUp>
+}
+@code {
+
+    private bool displayTeamDetails = false;
+
+    private bool displayCreatePopUp = false;
+    private bool displayDeletePopUp = false;
+    private Team selectedTeam;
+    private string question = "";
+
+    private List<Team>? teams;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // using var context = DbFactory.CreateDbContext();
+        await LoadTeams();
+    }
+
+    private async Task LoadTeams()
+    {
+        teams = await context.Teams.OrderBy(x => x.Name).ToListAsync();
+    }
+
+    private void SelectTeam(Team team)
+    {
+        selectedTeam = team;
+        displayTeamDetails = true;
+        question = $"Do you really want to delete the team '{selectedTeam.Name}'?";
+    }
+
+    private void OpenCreatePopUp()
+    {
+        displayCreatePopUp = true;
+    }
+
+    private async Task CloseCreatePopUp()
+    {
+        displayCreatePopUp = false;
+        await LoadTeams();
+    }
+
+    private async Task OpenDeletePopUp()
+    {
+        displayDeletePopUp = true;
+    }
+
+    private async Task CloseDeletePopUp(bool args)
+    {
+        displayDeletePopUp = false;
+        if (args)
+        {
+            context.Teams.Remove(selectedTeam);
+            context.SaveChanges();
+            selectedTeam = null;
+        }
+        await LoadTeams();
+    }
+    
+}

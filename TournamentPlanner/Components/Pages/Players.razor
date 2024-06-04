@@ -1,0 +1,110 @@
+﻿@using Microsoft.EntityFrameworkCore
+@using TournamentPlanner.Components.Players
+@using TournamentPlanner.Data
+@page "/players"
+@attribute [StreamRendering]
+@rendermode InteractiveServer
+@inject ApplicationDbContext context
+<PageTitle>Players</PageTitle>
+<h1>Players</h1>
+
+
+
+<div class="narrow-list-container debug-border game-list-container">
+    <div class="list debug-border">
+        <div class="list-action-buttons-section">
+            <button @onclick="OpenCreatePopUp" class="btn btn-success"><i class="bi bi-plus-circle-fill"></i> Add</button>
+            <button @onclick="OpenDeletePopUp" class="btn btn-danger"><i class="bi bi-dash-circle-fill"></i> Delete</button>
+        </div>
+
+        @if (players != null)
+        {
+
+            foreach (var player in players)
+            {
+                <div class="list-element" @onclick="() => SelectPlayer(player)">
+                    <span>@player.Name</span>
+                </div>
+
+            }
+        }
+    </div>
+
+    <div class="details debug-border">
+
+        @if (displayPlayerDetails)
+        {
+            <h1>@selectedPlayer.Name</h1>
+
+
+        }
+    </div>
+</div>
+
+@if (displayCreatePopUp)
+{
+    <CreatePlayer OnPopUpClose="CloseCreatePopUp"></CreatePlayer>
+}
+
+@if (displayDeletePopUp)
+{
+    <YesNoPopUp Question="@question" OnPopUpClose="(args) => CloseDeletePopUp(args)"></YesNoPopUp>
+}
+@code {
+
+    private bool displayPlayerDetails = false;
+
+    private bool displayCreatePopUp = false;
+    private bool displayDeletePopUp = false;
+    private Player selectedPlayer;
+    private string question = "";
+
+    private List<Player>? players;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // using var context = DbFactory.CreateDbContext();
+        await LoadPlayers();
+    }
+
+    private async Task LoadPlayers()
+    {
+        players = await context.Players.OrderBy(x => x.Name).ToListAsync();
+    }
+
+    private void SelectPlayer(Player player)
+    {
+        selectedPlayer = player;
+        displayPlayerDetails = true;
+        question = $"Do you really want to delete the player '{selectedPlayer.Name}'?";
+    }
+
+    private void OpenCreatePopUp()
+    {
+        displayCreatePopUp = true;
+    }
+
+    private async Task CloseCreatePopUp()
+    {
+        displayCreatePopUp = false;
+        await LoadPlayers();
+    }
+
+    private async Task OpenDeletePopUp()
+    {
+        displayDeletePopUp = true;
+    }
+
+    private async Task CloseDeletePopUp(bool args)
+    {
+        displayDeletePopUp = false;
+        if (args)
+        {
+            context.Players.Remove(selectedPlayer);
+            context.SaveChanges();
+            selectedPlayer = null;
+        }
+        await LoadPlayers();
+    }
+    
+}

@@ -1,0 +1,142 @@
+﻿@using Microsoft.EntityFrameworkCore
+@using TournamentPlanner.Data
+@page "/games"
+@attribute [StreamRendering]
+@rendermode InteractiveServer
+@inject ApplicationDbContext context
+<PageTitle>Games</PageTitle>
+<h1>Games</h1>
+
+
+
+<div class="narrow-list-container debug-border game-list-container">
+    <div class="list debug-border">
+        <div class="list-action-buttons-section">
+            <button @onclick="OpenCreatePopUp" class="btn btn-success"><i class="bi bi-plus-circle-fill"></i> Add</button>
+            <button @onclick="OpenDeletePopUp" class="btn btn-danger"><i class="bi bi-dash-circle-fill"></i> Delete</button>
+        </div>
+
+        @if (games != null)
+        {
+
+            foreach (var game in games)
+            {
+                <div class="list-element" @onclick="() => SelectGame(game)">
+                    <span>@game.Name</span>
+                </div>
+
+            }
+        }
+    </div>
+
+    <div class="details debug-border">
+
+        @if (displayGameDetails)
+        {
+            <h1>@selectedGame.Name</h1>
+
+
+            <ul class="nav nav-tabs">
+                <li class="nav-item">
+                    <a class="nav-link @(displayGameModes? "active":"")" @onclick="ShowGameModes">GameModes</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link @(displayGameMaps? "active" :"")" @onclick="ShowGameMaps">Maps</a>
+                </li>
+            </ul>
+
+            if (displayGameModes)
+            {
+                <GameModeView Game="selectedGame"></GameModeView>
+            }
+
+            if (displayGameMaps)
+            {
+                <GameMapView Game="selectedGame"></GameMapView>
+
+            }
+        }
+    </div>
+</div>
+
+@if (displayCreatePopUp)
+{
+    <CreateGame OnPopUpClose="CloseCreatePopUp"></CreateGame>
+}
+
+@if (displayDeletePopUp)
+{
+    <YesNoPopUp Question="@question" OnPopUpClose="(args) => CloseDeletePopUp(args)"></YesNoPopUp>
+}
+@code {
+
+    private bool displayGameDetails = false;
+    private bool displayGameModes = true;
+    private bool displayGameMaps = false;
+
+    private bool displayCreatePopUp = false;
+    private bool displayDeletePopUp = false;
+    private Game selectedGame;
+    private string question = "";
+
+    private List<Game>? games;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // using var context = DbFactory.CreateDbContext();
+        await LoadGames();
+    }
+
+    private async Task LoadGames()
+    {
+        games = await context.Games.OrderBy(x=>x.Name).ToListAsync();
+    }
+
+    private void SelectGame(Game game)
+    {
+        selectedGame = game;
+        displayGameDetails = true;
+        question = $"Do you really want to delete the game '{selectedGame.Name}'?";
+    }
+
+    private void OpenCreatePopUp()
+    {
+        displayCreatePopUp = true;
+    }
+
+    private async Task CloseCreatePopUp()
+    {
+        displayCreatePopUp = false;
+        await LoadGames();
+    }
+
+    private async Task OpenDeletePopUp()
+    {
+        displayDeletePopUp = true;
+    }
+
+    private async Task CloseDeletePopUp(bool args)
+    {
+        displayDeletePopUp = false;
+        if (args)
+        {
+            context.Games.Remove(selectedGame);
+            context.SaveChanges();
+            selectedGame = null;
+        }
+        await LoadGames();
+    }
+
+
+    private void ShowGameModes()
+    {
+        displayGameModes = true;
+        displayGameMaps = false;
+    }
+
+    private void ShowGameMaps()
+    {
+        displayGameModes = false;
+        displayGameMaps = true;
+    }
+}
