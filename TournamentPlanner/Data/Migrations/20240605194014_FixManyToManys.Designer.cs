@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TournamentPlanner.Data;
 
@@ -11,9 +12,11 @@ using TournamentPlanner.Data;
 namespace TournamentPlanner.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240605194014_FixManyToManys")]
+    partial class FixManyToManys
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -241,7 +244,7 @@ namespace TournamentPlanner.Migrations
                     b.Property<int>("Order")
                         .HasColumnType("int");
 
-                    b.Property<int>("OutputTeamsEntityId")
+                    b.Property<int>("OutpuTeamsEntityId")
                         .HasColumnType("int");
 
                     b.Property<int>("TournamentId")
@@ -301,43 +304,6 @@ namespace TournamentPlanner.Migrations
                     b.HasIndex("GameId");
 
                     b.ToTable("GameModes");
-                });
-
-            modelBuilder.Entity("TournamentPlanner.Data.ListManipulation", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("InputTeamsEntityAId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("InputTeamsEntityBId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("ListManipulationType")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("Order")
-                        .HasColumnType("int");
-
-                    b.Property<int>("OutputTeamEnityId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("TournamentId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TournamentId");
-
-                    b.ToTable("ListManipulations");
                 });
 
             modelBuilder.Entity("TournamentPlanner.Data.Map", b =>
@@ -423,9 +389,6 @@ namespace TournamentPlanner.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<int>("BlockId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("ListManipulationId")
                         .HasColumnType("int");
 
                     b.Property<int>("TournamentId")
@@ -640,17 +603,6 @@ namespace TournamentPlanner.Migrations
                     b.Navigation("Game");
                 });
 
-            modelBuilder.Entity("TournamentPlanner.Data.ListManipulation", b =>
-                {
-                    b.HasOne("TournamentPlanner.Data.Tournament", "Tournament")
-                        .WithMany()
-                        .HasForeignKey("TournamentId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Tournament");
-                });
-
             modelBuilder.Entity("TournamentPlanner.Data.Map", b =>
                 {
                     b.HasOne("TournamentPlanner.Data.Game", "Game")
@@ -718,7 +670,7 @@ namespace TournamentPlanner.Migrations
             modelBuilder.Entity("TournamentPlanner.Data.TeamPlayer", b =>
                 {
                     b.HasOne("TournamentPlanner.Data.Player", "Player")
-                        .WithMany()
+                        .WithMany("TeamPlayers")
                         .HasForeignKey("PlayerId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -789,6 +741,11 @@ namespace TournamentPlanner.Migrations
             modelBuilder.Entity("TournamentPlanner.Data.Match", b =>
                 {
                     b.Navigation("TeamMatchScores");
+                });
+
+            modelBuilder.Entity("TournamentPlanner.Data.Player", b =>
+                {
+                    b.Navigation("TeamPlayers");
                 });
 
             modelBuilder.Entity("TournamentPlanner.Data.Team", b =>

@@ -1,0 +1,145 @@
+﻿@using Microsoft.EntityFrameworkCore
+@using TournamentPlanner.Data
+@attribute [StreamRendering]
+@rendermode InteractiveServer
+@inject ApplicationDbContext context
+
+
+<div class="pop-up-background">
+    <div class="pop-up">
+        @if (Edition)
+        {
+            <h3>Edit ListManipulation</h3>
+        }
+        else
+        {
+            <h3>Create ListManipulation</h3>
+        }
+        @if (ListManipulation != null)
+        {
+            <input type="text" @bind="@ListManipulation.Name" />
+
+            <select @bind="ListManipulation.ListManipulationType">
+                @foreach (var listManipulationType in Enum.GetValues(typeof(ListManipulationType)).Cast<ListManipulationType>())
+                {
+                    <option value="@listManipulationType">@listManipulationType.ToString()</option>
+                }
+            </select>
+
+
+            if (outputTeamEntities != null)
+            {
+                <select @bind="selectedOutputTeamEntityAId">
+                    @foreach (var oe in outputTeamEntities)
+                    {
+                        <option value="@oe.Id">@(GetEntityInfos(oe.Id))</option>
+                    }
+                </select>
+                <select @bind="selectedOutputTeamEntityBId">
+                    @foreach (var oe in outputTeamEntities)
+                    {
+                        <option value="@oe.Id">@(GetEntityInfos(oe.Id))</option>
+                    }
+                </select>
+            }
+
+        }
+
+        <div>
+            <button class="btn btn-success" @onclick="AddListManipulation"> Add </button>
+            <button class="btn btn-danger" @onclick="Cancel"> Cancel </button>
+        </div>
+
+    </div>
+</div>
+
+@code {
+    [Parameter] public Tournament Tournament { get; set; }
+    [Parameter] public ListManipulation ListManipulation { get; set; }
+    [Parameter] public bool Edition { get; set; }
+    [Parameter] public EventCallback OnPopUpClose { get; set; }
+
+    private List<OutputTeamEntity> outputTeamEntities;
+    private string selectedOutputTeamEntityAId;
+    private string selectedOutputTeamEntityBId;
+
+
+
+    protected override void OnParametersSet()
+    {
+        if (ListManipulation == null || !Edition)
+        {
+            ListManipulation = new ListManipulation();
+        }
+        else
+        {
+            selectedOutputTeamEntityAId = ListManipulation.InputTeamsEntityAId.ToString();
+            selectedOutputTeamEntityBId = ListManipulation.InputTeamsEntityBId.ToString();
+        }
+        LoadEntities();
+
+        base.OnParametersSet();
+    }
+
+    private void LoadEntities()
+    {
+        outputTeamEntities = context.OutputTeamEntities.Where(x => x.TournamentId == Tournament.Id).ToList();
+        if (selectedOutputTeamEntityAId == null)
+            selectedOutputTeamEntityAId = outputTeamEntities[0].Id.ToString();
+        if (selectedOutputTeamEntityBId == null)
+            selectedOutputTeamEntityBId = outputTeamEntities[0].Id.ToString();
+    }
+
+
+    private void AddListManipulation()
+    {
+
+
+        ListManipulation.InputTeamsEntityAId = int.Parse(selectedOutputTeamEntityAId);
+        ListManipulation.InputTeamsEntityBId = int.Parse(selectedOutputTeamEntityBId);
+        ListManipulation.Tournament = Tournament;
+
+        if (Edition)
+        {
+            context.Update(ListManipulation);
+            context.SaveChanges();
+        }
+        else
+        {
+            context.ListManipulations.Add(ListManipulation);
+            context.SaveChanges();
+
+            context.OutputTeamEntities.Add(new OutputTeamEntity() { ListManipulationId = ListManipulation.Id, TournamentId = Tournament.Id });
+            context.SaveChanges();
+        }
+
+
+        OnPopUpClose.InvokeAsync();
+    }
+
+    private string GetEntityInfos(int entityId)
+    {
+        OutputTeamEntity ote = context.OutputTeamEntities.FirstOrDefault(x => x.Id == entityId);
+
+        if (ote.ListManipulationId > 0)
+        {
+            ListManipulation lm = context.ListManipulations.FirstOrDefault(l => l.Id == ote.ListManipulationId);
+            return $"ListManipulation {lm.Name},{lm.Order},{lm.ListManipulationType}";
+        }
+
+        if (ote.BlockId > 0)
+        {
+            Block block = context.Blocks.FirstOrDefault(b => b.Id == ote.BlockId);
+            return $"Block {block.Name},{block.Order},{block.BlockType}";
+        }
+
+        return "Tounament teams";
+    }
+
+    private void Cancel()
+    {
+        OnPopUpClose.InvokeAsync();
+    }
+
+
+}

@@ -1,0 +1,463 @@
+﻿@using TournamentPlanner.Components.Common
+@using TournamentPlanner.Components.Tournament
+@using TournamentPlanner.Data
+@attribute [StreamRendering]
+@rendermode InteractiveServer
+@inject ApplicationDbContext context
+@page "/tournaments/edit/{TournamentId:int}"
+@inject IJSRuntime JS
+
+@if (tournament != null)
+{
+    <PageTitle>Tournaments</PageTitle>
+    <h1>@tournament.Name</h1>
+
+    <button class="btn btn-primary" @onclick="OpenCreateBlockPopUp">Create block</button>
+    <button class="btn btn-primary" @onclick="OpenCreateListManipulationPopUp">Create List Manipulation</button>
+
+    @if (blocks != null || listManipulations != null)
+    {
+        int orderCount = 0;
+        if (blocks != null)
+        {
+            orderCount = blocks.Count;
+            @if (blocks.Count > 0)
+            {
+                orderCount = blocks.Max(b => b.Order);
+            }
+        }
+
+        if (listManipulations != null)
+        {
+            if (listManipulations.Count > orderCount)
+            {
+                orderCount = listManipulations.Max(b => b.Order);
+            }
+        }
+
+        <div class="block-order-list">
+
+
+            @for (int i = 0; i <= orderCount + 1; i++)
+            {
+                int x = i;
+                <div class="block-list debug-border" @ondrop="()=>OnDrop(x)" ondragover="event.preventDefault();">
+                    <h3>@x</h3>
+                    @foreach (var block in blocks.Where(b => b.Order == x))
+                    {
+                        <div id="@("block"+block.Id)" class="block" @ondragstart="() => OnDragged(block)" draggable="true">
+                            <span>@block.Name</span>
+                            <span>@block.BlockType.ToString()</span>
+                            <button class="btn btn-primary" @onclick="() => OpenEditBlockPopUp(block)"><i class="bi bi-pencil"></i></button>
+                            <button @onclick="() => OpenDeletePopUp(block)" class="btn btn-danger"><i class="bi bi-dash-circle-fill"></i> </button>
+                        </div>
+                    }
+
+                    @foreach (var listManipulation in listManipulations.Where(b => b.Order == x))
+                    {
+                        <div id="@("listManipulation"+listManipulation.Id)" class="block" @ondragstart="() => OnDraggedLM(listManipulation)" draggable="true">
+                            <span>@listManipulation.Name</span>
+                            <span>@listManipulation.ListManipulationType.ToString()</span>
+                            <button class="btn btn-primary" @onclick="() => OpenEditListManipulationPopUp(listManipulation)"><i class="bi bi-pencil"></i></button>
+                            <button @onclick="() => OpenDeletePopUp(listManipulation)" class="btn btn-danger"><i class="bi bi-dash-circle-fill"></i> </button>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+    }
+
+}
+
+<div id="lines">
+</div>
+
+
+@if (displayCreateTournament)
+{
+    <CreateTournament OnPopUpClose="CloseCreatePopUp"></CreateTournament>
+}
+
+@if (displayCreateBlock)
+{
+    <CreateEditBlock OnPopUpClose="CloseCreateBlockPopUp" Block="null" Edition="false" Tournament="tournament"></CreateEditBlock>
+}
+
+@if (displayEditBlock)
+{
+    <CreateEditBlock OnPopUpClose="CloseEditBlockPopUp" Block="editBlock" Edition="true" Tournament="tournament"></CreateEditBlock>
+}
+
+@if (displayCreateListManipulation)
+{
+    <CreateEditListManipulation OnPopUpClose="CloseCreateListManipulationPopUp" ListManipulation="null" Edition="false" Tournament="tournament"></CreateEditListManipulation>
+}
+
+@if (displayEditListManipulation)
+{
+    <CreateEditListManipulation OnPopUpClose="CloseEditListManipulationPopUp" ListManipulation="editListManipulation" Edition="true" Tournament="tournament"></CreateEditListManipulation>
+}
+
+@if (displayDeletePopUp)
+{
+    <YesNoPopUp Question="@question" OnPopUpClose="(args) => CloseDeletePopUp(args)"></YesNoPopUp>
+}
+
+<script>
+
+    function getById(id) {
+        const el = document.getElementById(id);
+        if (!el) throw Error(`cannot find #${id}`);
+        return el;
+    }
+
+
+    function getOffset(el) {
+        var rect = el.getBoundingClientRect();
+        return {
+            left: rect.left + window.pageXOffset,
+            top: rect.top + window.pageYOffset,
+            width: rect.width || el.offsetWidth,
+            height: rect.height || el.offsetHeight
+        };
+    }
+
+    function clearLines() {
+        document.getElementById("lines").innerHTML = "";
+    }
+
+    function connect(fromId, toId, color, thickness) { // draw a line connecting elements
+        var div1 = getById(fromId);
+        var div2 = getById(toId);
+
+        var off1 = getOffset(div1);
+        var off2 = getOffset(div2);
+        // middle right
+        var x1 = off1.left + off1.width;
+        var y1 = off1.top + off1.height / 2;
+        // middle left
+        var x2 = off2.left;
+        var y2 = off2.top + off2.height / 2;
+        // distance
+        var length = Math.sqrt(((x2 - x1) * (x2 - x1)) + ((y2 - y1) * (y2 - y1)));
+        // center
+        var cx = ((x1 + x2) / 2) - (length / 2);
+        var cy = ((y1 + y2) / 2) - (thickness / 2);
+        // angle
+        var angle = Math.atan2((y1 - y2), (x1 - x2)) * (180 / Math.PI);
+        // make hr
+        var htmlLine = "<div style='padding:0px; margin:0px; height:" + thickness + "px; background-color:" + color + "; line-height:1px; position:absolute; left:" + cx + "px; top:" + cy + "px; width:" + length + "px; -moz-transform:rotate(" + angle + "deg); -webkit-transform:rotate(" + angle + "deg); -o-transform:rotate(" + angle + "deg); -ms-transform:rotate(" + angle + "deg); transform:rotate(" + angle + "deg);' />";
+        //
+        // alert(htmlLine);
+        document.getElementById("lines").innerHTML += htmlLine;
+    }
+</script>
+
+@code {
+    [Parameter]
+    public int TournamentId { get; set; }
+    private Tournament tournament;
+
+    private bool displayCreateTournament = false;
+    private bool displayCreateBlock = false;
+    private bool displayEditBlock = false;
+    private bool displayCreateListManipulation = false;
+    private bool displayEditListManipulation = false;
+    private bool displayDeletePopUp = false;
+    private string question = "";
+    private int displayEditDropdownId = -1;
+
+    private Block editBlock;
+    private ListManipulation editListManipulation;
+
+    private Block lastDraggedBlock;
+    private ListManipulation lastDraggedLM;
+
+    private List<Block> blocks;
+    private List<ListManipulation> listManipulations;
+
+    private string blockLinks;
+
+    private object toDelete;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTournaments(false);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("window.registerViewportChangeCallback", DotNetObjectReference.Create(this));
+        }
+
+        await DrawLines();
+    }
+
+
+    private async Task LoadTournaments(bool drawLines = true)
+    {
+        tournament = context.Tournaments.FirstOrDefault(t => t.Id == TournamentId);
+        LoadBlocks();
+        LoadListManipulations();
+        DrawLines();
+        if (drawLines)
+            await DrawLines();
+    }
+
+    private void LoadBlocks()
+    {
+        blocks = context.Blocks.Where(x => x.Tournament.Id == tournament.Id).ToList();
+    }
+
+    private void LoadListManipulations()
+    {
+        listManipulations = context.ListManipulations.Where(x => x.Tournament.Id == tournament.Id).ToList();
+    }
+
+
+    private void OpenCreatePopUp()
+    {
+        displayCreateTournament = true;
+    }
+
+    private void OpenCreateBlockPopUp()
+    {
+        displayCreateBlock = true;
+    }
+
+
+    private async Task CloseCreateBlockPopUp()
+    {
+        displayCreateBlock = false;
+        await LoadTournaments();
+    }
+
+    private void OpenEditBlockPopUp(Block block)
+    {
+        editBlock = block;
+        displayEditBlock = true;
+    }
+
+
+    private async Task CloseEditBlockPopUp()
+    {
+        displayEditBlock = false;
+        await LoadTournaments();
+    }
+
+    private void OpenCreateListManipulationPopUp()
+    {
+        displayCreateListManipulation = true;
+    }
+
+    private async Task CloseCreateListManipulationPopUp()
+    {
+        displayCreateListManipulation = false;
+        await LoadTournaments();
+    }
+
+    private void OpenEditListManipulationPopUp(ListManipulation listManipulation)
+    {
+        editListManipulation = listManipulation;
+        displayEditListManipulation = true;
+    }
+    private async Task CloseEditListManipulationPopUp()
+    {
+        displayEditListManipulation = false;
+        await LoadTournaments();
+    }
+
+    private async Task CloseCreatePopUp()
+    {
+        displayCreateTournament = false;
+    }
+
+    private void Edit(Tournament tournament)
+    {
+
+    }
+
+    private void ShowDropdown(int id)
+    {
+        if (id == displayEditDropdownId)
+        {
+            displayEditDropdownId = -1;
+        }
+        else
+        {
+            displayEditDropdownId = id;
+        }
+    }
+
+    private void OnDrop(int order)
+    {
+        if (lastDraggedBlock != null)
+        {
+            lastDraggedBlock.Order = order;
+            context.Update(lastDraggedBlock);
+        }
+        if (lastDraggedLM != null)
+        {
+            lastDraggedLM.Order = order;
+            context.Update(lastDraggedLM);
+        }
+        context.SaveChanges();
+    }
+
+    private void OnDraggedLM(ListManipulation listManipulation)
+    {
+        lastDraggedLM = listManipulation;
+        lastDraggedBlock = null;
+    }
+
+    private void OnDragged(Block block)
+    {
+        lastDraggedBlock = block;
+        lastDraggedLM = null;
+    }
+
+
+    private async Task DrawLines()
+    {
+        await JS.InvokeVoidAsync("clearLines");
+
+        List<OutputTeamEntity> otes = context.OutputTeamEntities.Where(o => o.TournamentId == tournament.Id).ToList();
+
+        foreach (var block in blocks)
+        {
+            string fromId, toId;
+
+            OutputTeamEntity ote = otes.FirstOrDefault(o => o.Id == block.InputTeamsEntityId);
+
+            if (ote == null)
+                continue;
+
+            toId = "block" + block.Id;
+            fromId = "";
+
+            if (ote.BlockId > 0)
+            {
+                fromId = "block" + ote.BlockId;
+            }
+            if (ote.ListManipulationId > 0)
+            {
+                fromId = "listManipulation" + ote.ListManipulationId;
+            }
+
+            if (fromId == "")
+                continue;
+
+            await JS.InvokeVoidAsync("connect", fromId, toId, "black", 2);
+        }
+
+        foreach (var listManipulation in listManipulations)
+        {
+            string fromId, toId;
+
+            OutputTeamEntity ote = otes.FirstOrDefault(o => o.Id == listManipulation.InputTeamsEntityAId);
+
+            toId = "listManipulation" + listManipulation.Id;
+            fromId = "";
+
+            if (ote.BlockId > 0)
+            {
+                fromId = "block" + ote.BlockId;
+            }
+            if (ote.ListManipulationId > 0)
+            {
+                fromId = "listManipulation" + ote.ListManipulationId;
+            }
+
+            if (fromId == "")
+                continue;
+
+            await JS.InvokeVoidAsync("connect", fromId, toId, "black", 2);
+
+            ote = otes.FirstOrDefault(o => o.Id == listManipulation.InputTeamsEntityBId);
+            toId = "listManipulation" + listManipulation.Id;
+            fromId = "";
+
+            if (ote.BlockId > 0)
+            {
+                fromId = "block" + ote.BlockId;
+            }
+            if (ote.ListManipulationId > 0)
+            {
+                fromId = "listManipulation" + ote.ListManipulationId;
+            }
+
+            if (fromId == "")
+                continue;
+
+            await JS.InvokeVoidAsync("connect", fromId, toId, "black", 2);
+        }
+
+    }
+
+    [JSInvokable]
+    public void OnResize(int width, int height)
+    {
+        DrawLines();
+    }
+
+    private async Task CloseDeletePopUp(bool args)
+    {
+        displayDeletePopUp = false;
+        int outputOteId = 0;
+        if (args)
+        {
+            try
+            {
+                Block b = (Block)toDelete;
+                OutputTeamEntity ote = context.OutputTeamEntities.FirstOrDefault(x => x.BlockId == b.Id);
+                outputOteId = ote.Id;
+                context.Remove(ote);
+            }
+            catch (Exception)
+            {
+            }
+
+            try
+            {
+                ListManipulation lm = (ListManipulation)toDelete;
+                OutputTeamEntity ote = context.OutputTeamEntities.FirstOrDefault(x => x.ListManipulationId == lm.Id);
+                outputOteId = ote.Id;
+                context.Remove(ote);
+            }
+            catch (Exception)
+            {
+            }
+
+            foreach (var block in context.Blocks.Where(x => x.InputTeamsEntityId == outputOteId))
+            {
+                block.InputTeamsEntityId = 0;
+                context.Update(block);
+
+            }
+
+            foreach (var lm in context.ListManipulations.Where(x => x.InputTeamsEntityAId == outputOteId || x.InputTeamsEntityBId == outputOteId))
+            {
+                if (lm.InputTeamsEntityAId == outputOteId)
+                    lm.InputTeamsEntityAId = 0;
+                if (lm.InputTeamsEntityBId == outputOteId)
+                    lm.InputTeamsEntityBId = 0;
+                context.Update(lm);
+            }
+
+            context.Remove(toDelete);
+            context.SaveChanges();
+        }
+        await LoadTournaments();
+    }
+
+    private void OpenDeletePopUp(object obj)
+    {
+        question = "Do you want to delete this object?";
+        toDelete = obj;
+        displayDeletePopUp = true;
+    }
+}

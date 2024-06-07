@@ -54,6 +54,12 @@ h1:focus {
     overflow-y:scroll;
 }
 
+.space-items {
+    display: flex;
+    justify-content: space-between;
+    padding:0px 10px 0px 10px;
+}
+
 .list-element {
     display: flex;
     height: 35px;
@@ -193,3 +199,26 @@ h1:focus {
     overflow-y: scroll;
     width:250px
 }
+
+.block-list{
+    display:flex;
+    flex-direction:column;
+    overflow-y:scroll;
+    min-width:220px; 
+}
+
+.block-order-list {
+    display: flex;
+    overflow-x: scroll;
+}
+
+.block{
+    width:150px;
+    height:150px;
+    background-color:darkgrey;
+    border-radius:25px;
+    padding:20px;
+    margin:20px;
+
+}
+

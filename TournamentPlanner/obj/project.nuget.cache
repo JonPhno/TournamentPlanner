@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "wkDthHOGwunemxj1wZIYJDps1V8fRR6NRLSGXUr4QhrsBwznoNL5LRqM4XAdt1sS0NQe8Xp+N3bs1f+4r+4g4Q==",
+  "dgSpecHash": "PwKEr7nGWPZcGuSBFo5MNBEE9trs12H0vvPXVaWOnhcFBBnMaPTAkoHMPrnEEcQIh0yNNbFIMUoxRO4Y46CTQQ==",
   "success": true,
-  "projectFilePath": "C:\\Users\\William\\Desktop\\Github repos\\TournamentPlanner\\TournamentPlanner\\TournamentPlanner\\TournamentPlanner.csproj",
+  "projectFilePath": "C:\\Users\\William\\Desktop\\Github repos\\TournamentPlanner\\TournamentPlanner\\TournamentPlanner.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\William\\.nuget\\packages\\azure.core\\1.25.0\\azure.core.1.25.0.nupkg.sha512",
     "C:\\Users\\William\\.nuget\\packages\\azure.identity\\1.7.0\\azure.identity.1.7.0.nupkg.sha512",

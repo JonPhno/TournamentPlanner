@@ -1,0 +1,101 @@
+﻿@page "/tournaments"
+@using TournamentPlanner.Components.Tournament
+@using TournamentPlanner.Components.Common
+@using TournamentPlanner.Data
+@attribute [StreamRendering]
+@rendermode InteractiveServer
+@inject ApplicationDbContext context
+
+<PageTitle>Tournaments</PageTitle>
+
+<h1>Tournaments</h1>
+
+<div class="list">
+    @if (tournaments != null)
+    {
+        <div class="list-action-buttons-section">
+            <button @onclick="OpenCreatePopUp" class="btn btn-success"><i class="bi bi-plus-circle-fill"></i> Add</button>
+            @* <button @onclick="OpenDeletePopUp" class="btn btn-danger"><i class="bi bi-dash-circle-fill"></i> Delete</button> *@
+        </div>
+        <div class="list-header space-items">
+            <span>Name</span>
+            <span>Date</span>
+            <span>Status</span>
+            <span>Actions</span>
+        </div>
+        foreach (var tournament in tournaments)
+        {
+            int i = 0;
+
+            <div class="list-element space-items">
+                <span>@tournament.Name</span>
+                <span>@tournament.Date</span>
+                <span>Upcoming</span>
+                <div>
+                    <button @onclick="() => {ShowDropdown(tournament.Id);}"><i class="btn bi bi-three-dots"></i></button>
+                    @if (displayEditDropdownId == tournament.Id)
+                    {
+                        <div class="dropdown-menu" style="display:block" >
+                            <a class="dropdown-item" href="@("/tournaments/edit/"+tournament.Id)" @onclick="() => {Edit(tournament);}"><i class="bi bi-pencil"></i>Edit</a>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            i++;
+        }
+    }
+</div>
+
+
+@if (displayCreateTournament)
+{
+    <CreateTournament OnPopUpClose="CloseCreatePopUp"></CreateTournament>
+}
+
+@code {
+    private List<Tournament> tournaments;
+    private bool displayCreateTournament = false;
+    private int displayEditDropdownId = -1;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        LoadTournaments();
+    }
+
+    private void LoadTournaments()
+    {
+        tournaments = context.Tournaments.OrderByDescending(t => t.Date).ToList();
+    }
+
+
+    private void OpenCreatePopUp()
+    {
+        displayCreateTournament = true;
+    }
+
+    private async Task CloseCreatePopUp()
+    {
+        displayCreateTournament = false;
+        LoadTournaments();
+    }
+
+    private void Edit(Tournament tournament)
+    {
+
+    }
+
+    private void ShowDropdown(int id)
+    {
+        if (id == displayEditDropdownId)
+        {
+            displayEditDropdownId = -1;
+        }
+        else
+        {
+            displayEditDropdownId = id;
+        }
+    }
+
+}

@@ -1,0 +1,129 @@
+﻿@using Microsoft.EntityFrameworkCore
+@using TournamentPlanner.Data
+@attribute [StreamRendering]
+@rendermode InteractiveServer
+@inject ApplicationDbContext context
+
+
+<div class="pop-up-background">
+    <div class="pop-up">
+        @if (Edition)
+        {
+            <h3>Edit Block</h3>
+        }
+        else
+        {
+            <h3>Create Block</h3>
+        }
+        @if (Block != null)
+        {
+            <input type="text" @bind="@Block.Name" />
+
+            <select @bind="Block.BlockType">
+                @foreach (var blockType in Enum.GetValues(typeof(BlockType)).Cast<BlockType>())
+                {
+                    <option value="@blockType">@blockType.ToString()</option>
+                }
+            </select>
+
+            if (outputTeamEntities != null)
+            {
+                <select @bind="selectedOutputTeamEntityId">
+                    @foreach (var oe in outputTeamEntities)
+                    {
+                        <option value="@oe.Id">@(GetEntityInfos(oe.Id)))</option>
+                    }
+                </select>
+            }
+
+        }
+
+        <div>
+            <button class="btn btn-success" @onclick="AddBlock"> Add </button>
+            <button class="btn btn-danger" @onclick="Cancel"> Cancel </button>
+        </div>
+
+    </div>
+</div>
+
+@code {
+    [Parameter] public Tournament Tournament { get; set; }
+    [Parameter] public Block Block { get; set; }
+    [Parameter] public bool Edition { get; set; }
+    [Parameter] public EventCallback OnPopUpClose { get; set; }
+
+    private List<OutputTeamEntity> outputTeamEntities;
+    private string selectedOutputTeamEntityId;
+
+
+
+    protected override void OnParametersSet()
+    {
+        if (Block == null || !Edition)
+        {
+            Block = new Block();
+        }
+        else
+        {
+            selectedOutputTeamEntityId = Block.InputTeamsEntityId.ToString();
+        }
+        LoadEntities();
+
+        base.OnParametersSet();
+    }
+
+    private void LoadEntities()
+    {
+        outputTeamEntities = context.OutputTeamEntities.Where(x => x.TournamentId == Tournament.Id).ToList();
+        if (selectedOutputTeamEntityId == null)
+            selectedOutputTeamEntityId = outputTeamEntities[0].Id.ToString();
+    }
+
+
+    private void AddBlock()
+    {
+        Block.InputTeamsEntityId = int.Parse(selectedOutputTeamEntityId);
+        Block.Tournament = Tournament;
+        if (Edition)
+        {
+            context.Update(Block);
+            context.SaveChanges();
+        }
+        else
+        {
+            context.Blocks.Add(Block);
+            context.SaveChanges();
+
+            context.OutputTeamEntities.Add(new OutputTeamEntity() { BlockId = Block.Id, TournamentId = Tournament.Id });
+            context.SaveChanges();
+        }
+
+        OnPopUpClose.InvokeAsync();
+    }
+
+    private string GetEntityInfos(int entityId)
+    {
+        OutputTeamEntity ote = context.OutputTeamEntities.FirstOrDefault(x => x.Id == entityId);
+
+        if (ote.ListManipulationId > 0)
+        {
+            ListManipulation lm = context.ListManipulations.FirstOrDefault(l => l.Id == ote.ListManipulationId);
+            return $"ListManipulation {lm.Name},{lm.Order},{lm.ListManipulationType}";
+        }
+
+        if (ote.BlockId > 0)
+        {
+            Block block = context.Blocks.FirstOrDefault(b => b.Id == ote.BlockId);
+            return $"Block {block.Name},{block.Order},{block.BlockType}";
+        }
+
+        return "Tounament teams";
+    }
+
+    private void Cancel()
+    {
+        OnPopUpClose.InvokeAsync();
+    }
+
+
+}

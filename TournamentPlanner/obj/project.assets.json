@@ -4229,11 +4229,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\William\\Desktop\\Github repos\\TournamentPlanner\\TournamentPlanner\\TournamentPlanner\\TournamentPlanner.csproj",
+      "projectUniqueName": "C:\\Users\\William\\Desktop\\Github repos\\TournamentPlanner\\TournamentPlanner\\TournamentPlanner.csproj",
       "projectName": "TournamentPlanner",
-      "projectPath": "C:\\Users\\William\\Desktop\\Github repos\\TournamentPlanner\\TournamentPlanner\\TournamentPlanner\\TournamentPlanner.csproj",
+      "projectPath": "C:\\Users\\William\\Desktop\\Github repos\\TournamentPlanner\\TournamentPlanner\\TournamentPlanner.csproj",
       "packagesPath": "C:\\Users\\William\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\William\\Desktop\\Github repos\\TournamentPlanner\\TournamentPlanner\\TournamentPlanner\\obj\\",
+      "outputPath": "C:\\Users\\William\\Desktop\\Github repos\\TournamentPlanner\\TournamentPlanner\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\William\\AppData\\Roaming\\NuGet\\NuGet.Config",

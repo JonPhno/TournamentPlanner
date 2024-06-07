@@ -58,7 +58,7 @@
 
     protected override void OnParametersSet()
     {
-        selectedPlayers = context.Players.Where(x => context.TeamPlayers.Any(t => t.PlayerId == x.Id && t.TeamId == Team.Id)).ToList();
+        selectedPlayers = context.Players.Where(x => context.TeamPlayers.Any(t => t.Player.Id == x.Id && t.Team.Id == Team.Id)).ToList();
         players = context.Players.ToList();
         LoadAvailablePlayers();
         base.OnParametersSet();
@@ -86,7 +86,7 @@
         selectedPlayers.Add(player);
         LoadAvailablePlayers();
 
-        TeamPlayer tp = new TeamPlayer() { PlayerId = player.Id, TeamId = Team.Id };
+        TeamPlayer tp = new TeamPlayer() { Player = player, Team = Team };
         context.TeamPlayers.Add(tp);
         context.SaveChanges();
     }
@@ -95,7 +95,7 @@
     {
         selectedPlayers.Remove(player);
         LoadAvailablePlayers();
-        context.TeamPlayers.Remove(context.TeamPlayers.FirstOrDefault(tp => tp.TeamId == Team.Id && tp.PlayerId == player.Id));
+        context.TeamPlayers.Remove(context.TeamPlayers.FirstOrDefault(tp => tp.Team.Id == Team.Id && tp.Player.Id == player.Id));
         context.SaveChanges();
     }
 }

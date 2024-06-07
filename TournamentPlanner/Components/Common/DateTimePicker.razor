@@ -1,0 +1,35 @@
+﻿@rendermode InteractiveServer
+
+
+<div>
+    <input type="date" @bind="date" @oninput="OnChange" />
+    <select @bind="hour" @oninput="OnChange">
+        @for (int i = 0; i <= 23; i++)
+        {
+            <option value="@i">@i.ToString("00")</option>
+        }
+    </select>
+    :
+    <select @bind="minute" @oninput="OnChange">
+        @for (int i = 0; i <= 59; i++)
+        {
+            <option value="@i">@i.ToString("00")</option>
+        }
+    </select>
+</div>
+
+
+@code {
+    [Parameter] public EventCallback<DateTime> OnDateUpdate { get; set; }
+
+    DateTime date = DateTime.Today;
+    int hour = DateTime.Now.Hour;
+    int minute = DateTime.Now.Minute;
+
+    private void OnChange()
+    {
+        date = new DateTime(date.Year, date.Month, date.Day, hour, minute, 0);
+        OnDateUpdate.InvokeAsync(date);
+    }
+
+}

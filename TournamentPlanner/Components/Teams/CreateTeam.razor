@@ -30,12 +30,14 @@
     {
         context.Add(new Team() { Name = teamName });
         context.SaveChanges();
+        context.Dispose();
         teamName = "";
         ClosePopOp();
     }
 
     private void Cancel()
     {
+        context.Dispose();
         teamName = "";
         ClosePopOp();
     }

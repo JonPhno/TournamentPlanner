@@ -1,0 +1,143 @@
+﻿@using Microsoft.EntityFrameworkCore
+@using TournamentPlanner.Components.Common
+@using TournamentPlanner.Data
+@attribute [StreamRendering]
+@rendermode InteractiveServer
+@inject ApplicationDbContext context
+
+
+<div class="pop-up-background">
+    <div class="pop-up">
+        <h3>Add Tournament</h3>
+
+        <input id="" type="text" placeholder="Tournament's name" @bind="tournamentName" @oninput="(EventArgs) => { tournamentName = EventArgs.Value.ToString();}" />
+        @* <InputDate TValue="DateTime" Value="tournamentDate" Placeholder="Enter Date" /> *@
+        @* <input type="datetime" @bind="tournamentDate" /> *@
+        <DateTimePicker OnDateUpdate="(args) => {tournamentDate = args;}"></DateTimePicker>
+
+        <select @bind="gameId">
+            @if (games != null)
+            {
+                @foreach (var game in games)
+                {
+                    <option value="@game.Id">@game.Name</option>
+                }
+            }
+        </select>
+
+        <span>NUmber of player per team</span>
+        <div>
+            <InputRadioGroup @bind-Value="NumOfPlayerPerTeam">
+                @for (int i = 1; i <= 4; i++)
+                {
+                    int x = i;
+                    <span><InputRadio Value="x" @onclick="() => {LoadTeams(x);}" /> @x</span>
+                }
+            </InputRadioGroup>
+        </div>
+
+        <div class="list ">
+            @foreach (var team in availableTeams)
+            {
+                <div class="list-element space-items">
+                    <input type="checkbox" @onchange="args=> {CheckTeam(team,args.Value);}" />
+                    <span>@team.Name</span>
+
+                    <span>
+                        @foreach (var tp in team.TeamPlayers)
+                        {
+                            @($"{tp.Player.Name},")
+                        }
+                    </span>
+                </div>
+            }
+        </div>
+
+
+        <div>
+            <button class="btn btn-success" @onclick="AddTournament"> Add </button>
+            <button class="btn btn-danger" @onclick="Cancel"> Cancel </button>
+        </div>
+    </div>
+</div>
+
+
+@code {
+    [Parameter] public EventCallback OnPopUpClose { get; set; }
+
+    private string tournamentName = "";
+    private DateTime tournamentDate = DateTime.Today;
+    private int gameId;
+    private List<Game> games;
+
+
+    private int NumOfPlayerPerTeam = 1;
+    private List<Team> teams;
+    private List<TeamPlayer> teamPlayers;
+
+    private List<Team> availableTeams;
+    private List<Team> checkedTeams = new List<Team>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        games = context.Games.OrderBy(g=>g.Name).ToList();
+        LoadTeams(1);
+    }
+
+    private void AddTournament()
+    {
+        Tournament tournament = new Tournament() { Name = tournamentName, Date = tournamentDate, Game = games.FirstOrDefault(g => g.Id == gameId) };
+        context.Add(tournament);
+        foreach (var team in checkedTeams)
+        {
+            context.Add(new TournamentTeam() { Team = team, Tournament = tournament });
+        }
+
+
+        context.SaveChanges();
+        context.OutputTeamEntities.Add(new OutputTeamEntity() { TournamentId = tournament.Id });
+        context.SaveChanges();
+        tournamentName = "";
+        ClosePopOp();
+    }
+
+    private void Cancel()
+    {
+        tournamentName = "";
+        ClosePopOp();
+    }
+
+    private Task ClosePopOp()
+    {
+        return OnPopUpClose.InvokeAsync();
+    }
+
+    private void CheckTeam(Team team, object value)
+    {
+        bool isChecked = (bool)value;
+        if (checkedTeams.Any(t => t.Id == team.Id) && !isChecked)
+        {
+            checkedTeams.Remove(team);
+        }
+        else if (!checkedTeams.Any(t => t.Id == team.Id) && isChecked)
+        {
+            checkedTeams.Add(team);
+        }
+    }
+
+    private void LoadTeams(int i)
+    {
+        teamPlayers = context.TeamPlayers.ToList();
+        teams = context.Teams.ToList();
+        availableTeams = teams.Where(t => teamPlayers.Where(tp => tp.Team.Id == t.Id).ToList().Count == i).ToList();
+
+        foreach (var team in availableTeams)
+        {
+            foreach (var tp in team.TeamPlayers)
+            {
+                tp.Player = context.Players.FirstOrDefault(x => x.Id == tp.PlayerId);
+            }
+        }
+
+    }
+}
