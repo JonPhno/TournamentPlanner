@@ -20,6 +20,7 @@ namespace TournamentPlanner.Data
         public DbSet<TournamentTeam> TournamentTeams { get; set; }
         public DbSet<OutputTeamEntity> OutputTeamEntities { get; set; }
         public DbSet<ListManipulation> ListManipulations { get; set; }
+        public DbSet<MatchFlow> MatchFlows { get; set; }
 
 
     }

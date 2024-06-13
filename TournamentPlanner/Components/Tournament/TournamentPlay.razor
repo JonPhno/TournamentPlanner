@@ -1,0 +1,35 @@
+﻿@using TournamentPlanner.Components.Common
+@using TournamentPlanner.Components.Tournament
+@using TournamentPlanner.Data
+@attribute [StreamRendering]
+@rendermode InteractiveServer
+@inject ApplicationDbContext context
+@page "/tournaments/play/{TournamentId:int}"
+@inject IJSRuntime JS
+
+@if (tournament != null)
+{
+    <PageTitle>Tournaments</PageTitle>
+    <h1>@tournament.Name</h1>
+
+    @foreach (var block in blocks)
+    {
+        <TournamentBlockPlay Block="block"></TournamentBlockPlay>
+    }
+
+}
+
+@code {
+    [Parameter]
+    public int TournamentId { get; set; }
+    private Tournament tournament;
+    private List<Block> blocks;
+
+    protected override void OnParametersSet()
+    {
+        tournament = context.Tournaments.FirstOrDefault(t => t.Id == TournamentId);
+        blocks = context.Blocks.Where(b => b.Tournament.Id == TournamentId).ToList();
+        base.OnParametersSet();
+    }
+
+}

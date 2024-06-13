@@ -63,12 +63,33 @@
     protected override async Task OnInitializedAsync()
     {
         // using var context = DbFactory.CreateDbContext();
+
+        //await LoadTeams();
+        teams = context.Teams.Include(x => x.TeamPlayers).ThenInclude(x => x.Player).OrderBy(x => x.Name).ToList();
+        List<Player> players = context.Players.ToList();
+
+        foreach (var player in players)
+        {
+            if (!teams.Any(t => t.Name == player.Name))
+            {
+                Team team = new Team();
+                team.Name = player.Name;
+
+                context.Add(team);
+                context.SaveChanges();
+
+                TeamPlayer tp = new TeamPlayer() { Player = player, PlayerId = player.Id, Team = team };
+                context.Add(tp);
+                context.SaveChanges();
+            }
+        }
         await LoadTeams();
     }
 
     private async Task LoadTeams()
     {
-        teams = await context.Teams.OrderBy(x => x.Name).ToListAsync();
+        teams = await context.Teams.Include(x=>x.TeamPlayers).ThenInclude(x=>x.Player).OrderBy(x => x.Name).ToListAsync();
+        teams = teams.Where(t => !(t.TeamPlayers.Count == 1 && t.TeamPlayers[0].Player.Name == t.Name)).ToList();
     }
 
     private void SelectTeam(Team team)
@@ -76,6 +97,11 @@
         selectedTeam = team;
         displayTeamDetails = true;
         question = $"Do you really want to delete the team '{selectedTeam.Name}'?";
+
+        if (team.TeamPlayers.Count == 1 && team.TeamPlayers[0].Player.Name == team.Name)
+        {
+            displayTeamDetails = false;
+        }
     }
 
     private void OpenCreatePopUp()

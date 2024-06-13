@@ -222,3 +222,35 @@ h1:focus {
 
 }
 
+
+.round-robin-table, .round-robin-table > tr, .round-robin-table > tr > th, .round-robin-table > tr > td {
+    border: 1px solid black
+}
+
+.round-robin-invalid-match { 
+    background-color: black;
+}
+
+.match-highlight{
+    background-color:red;
+}
+
+.single-elimination-grid{
+    display:flex;
+}
+
+.round-list{
+    display:flex;
+    flex-direction:column;
+    justify-content:space-around;
+}
+
+.match-table {
+    width: -webkit-fill-available;
+    margin-right: 100px;
+    margin-bottom:50px;
+}
+
+.match-table-score{
+    width:50px;
+}

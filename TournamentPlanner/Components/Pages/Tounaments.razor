@@ -5,6 +5,7 @@
 @attribute [StreamRendering]
 @rendermode InteractiveServer
 @inject ApplicationDbContext context
+@inject NavigationManager NavManager
 
 <PageTitle>Tournaments</PageTitle>
 
@@ -27,8 +28,8 @@
         {
             int i = 0;
 
-            <div class="list-element space-items">
-                <span>@tournament.Name</span>
+            <div class="list-element space-items" >
+                <span @onclick="() => Play(tournament)">@tournament.Name</span>
                 <span>@tournament.Date</span>
                 <span>Upcoming</span>
                 <div>
@@ -96,6 +97,11 @@
         {
             displayEditDropdownId = id;
         }
+    }
+
+    private void Play(Tournament tournament)
+    {
+        NavManager.NavigateTo($"/tournaments/play/{tournament.Id}");
     }
 
 }

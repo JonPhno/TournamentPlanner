@@ -1,0 +1,66 @@
+﻿@using TournamentPlanner.Data
+@attribute [StreamRendering]
+@rendermode InteractiveServer
+@inject ApplicationDbContext context
+
+@if (TeamMatchScores != null)
+{
+    <div class="pop-up-background">
+        <div class="pop-up">
+            <h3>Scores</h3>
+
+            @foreach (var tms in TeamMatchScores)
+            {
+                <div>
+                    <span>@tms.Team.Name</span><input type="number" @bind="tms.Score" />
+                </div>
+            }
+
+            <div>
+                <button class="btn btn-primary" @onclick="OnYes"> Save </button>
+                <button class="btn btn-danger" @onclick="OnNo"> Cancel </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public EventCallback<bool> OnPopUpClose { get; set; }
+    [Parameter] public List<TeamMatchScore> TeamMatchScores { get; set; }
+
+    private void OnYes()
+    {
+        context.UpdateRange(TeamMatchScores);
+        Match match = context.Matches.FirstOrDefault(m => m.Id == TeamMatchScores[0].Match.Id);
+        match.Played = true;
+        match.TeamMatchScores = TeamMatchScores;
+        List<MatchFlow> matchFlows = context.MatchFlows.Where(x => x.ParentId == match.Id).ToList();
+
+        int matchFlowCount = 0;
+        foreach (var matchFlow in matchFlows.Where(mf=>mf.Winner))
+        {
+            TeamMatchScore tms = context.TeamMatchScores.FirstOrDefault(x => x.MatchFlowId == matchFlow.Id);
+            tms.Team = match.Winners[matchFlowCount++];
+            context.Update(tms);
+        }
+
+        matchFlowCount = 0;
+        foreach (var matchFlow in matchFlows.Where(mf => !mf.Winner))
+        {
+            TeamMatchScore tms = context.TeamMatchScores.FirstOrDefault(x => x.MatchFlowId == matchFlow.Id);
+            tms.Team = match.Loosers[matchFlowCount++];
+            context.Update(tms);
+        }
+
+        context.Update(match);
+        context.SaveChanges();
+
+
+        OnPopUpClose.InvokeAsync(true);
+    }
+
+    private void OnNo()
+    {
+        OnPopUpClose.InvokeAsync(false);
+    }
+}

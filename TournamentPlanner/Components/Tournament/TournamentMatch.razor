@@ -1,0 +1,59 @@
+﻿@using TournamentPlanner.Data
+
+<table class="round-robin-table match-table" id="@($"match{Match.Id}")">
+    <tr>
+        <th>@Match.Id</th>
+    </tr>
+
+    @if (Match.TeamMatchScores != null && Match.TeamMatchScores.Count > 0)
+    {
+        @foreach (var tms in Match.TeamMatchScores)
+        {
+            <tr>
+                @if (tms.Team != null)
+                {
+                    <td>@tms.Team.Name</td>
+                    <td @onclick="EnterScores"
+                        class="match-table-score  @(highlight? "match-highlight":"")"
+                        @onmouseenter="() =>HightLightMatch(true)"
+                        @onmouseleave="() =>HightLightMatch(false)">
+                        @tms.Score
+                    </td>
+                }
+                else
+                {
+                    <td>TBD</td>
+                    <td class="match-table-score"></td>
+                }
+            </tr>
+        }
+    }
+    else
+    {
+        <tr>
+            <td>TBD</td>
+            <td class="match-table-score"></td>
+        </tr>
+        <tr>
+            <td>TBD</td>
+            <td class="match-table-score"></td>
+        </tr>
+    }
+</table>
+
+@code {
+    [Parameter] public Match Match { get; set; }
+    [Parameter] public EventCallback<int> OpenTeamMatchScore { get; set; }
+
+    private bool highlight = false;
+
+    private void EnterScores()
+    {
+        OpenTeamMatchScore.InvokeAsync(Match.Id);
+    }
+
+    private void HightLightMatch(bool value)
+    {
+        highlight = value;
+    }
+}

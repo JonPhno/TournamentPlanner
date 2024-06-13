@@ -1,0 +1,64 @@
+﻿@inject ApplicationDbContext context
+@attribute [StreamRendering]
+@rendermode InteractiveServer
+
+@using Microsoft.EntityFrameworkCore
+@using TournamentPlanner.Components.Tournament.MatchViews
+@using TournamentPlanner.Data
+@using TournamentPlanner.Data.Blocks
+@using TournamentPlanner.Data.Interfaces
+@inject IJSRuntime JS
+
+@if (Matches != null)
+{
+    int count = 0;
+    int round = 1;
+    int matchIndex = 0;
+    int totalMatches = Matches.Count;
+    int rounds = (int)Math.Log2(Matches.Count + 1);
+    int numberOfMatchThisRound = (int)Math.Pow(2, rounds - 1);
+    bool startRound = true;
+    bool endRound = false;
+
+    <div class="single-elimination-grid">
+
+        @for (round = 1; round <= rounds; round++)
+        {
+            numberOfMatchThisRound = (int)Math.Pow(2, rounds - (round));
+            <div class="round-list">
+                @for (int i = matchIndex; i < matchIndex + numberOfMatchThisRound; i++)
+                {
+                    Match match = Matches[i];
+                    <TournamentMatch Match="match" OpenTeamMatchScore="(args) => OpenTeamMatchScore(args)"> </TournamentMatch>
+                }
+            </div>
+
+            matchIndex += numberOfMatchThisRound;
+        }
+
+
+    </div>
+}
+
+@if (teamMatchScores != null)
+{
+    <MatchEnterScorePopup TeamMatchScores="teamMatchScores" OnPopUpClose="CloseTeamMatchScorePopup"></MatchEnterScorePopup>
+}
+
+@code {
+    [Parameter] public List<Match> Matches { get; set; }
+
+    private List<TeamMatchScore> teamMatchScores = null;
+
+    private void OpenTeamMatchScore(int matchId)
+    {
+        teamMatchScores = context.TeamMatchScores.Include(x=>x.Team).Where(x => x.Match.Id == matchId).ToList();
+    }
+
+    private async Task CloseTeamMatchScorePopup()
+    {
+        teamMatchScores = null;
+        await JS.InvokeVoidAsync("resize");
+    }
+
+}

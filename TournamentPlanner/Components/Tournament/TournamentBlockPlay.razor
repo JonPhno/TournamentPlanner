@@ -1,0 +1,312 @@
+﻿@inject ApplicationDbContext context
+@attribute [StreamRendering]
+@rendermode InteractiveServer
+@inject ApplicationDbContext context
+
+@using Microsoft.EntityFrameworkCore
+@using TournamentPlanner.Components.Tournament.Blocks
+@using TournamentPlanner.Components.Tournament.MatchViews
+@using TournamentPlanner.Data
+@using TournamentPlanner.Data.Blocks
+@using TournamentPlanner.Data.Interfaces
+@inject IJSRuntime JS
+
+@if (Block != null)
+{
+    @if (matches == null || matches.Count == 0)
+    {
+        <button class="btn btn-primary" @onclick="GenerateMatches">Generate matches</button>
+    }
+    else
+    {
+        @if (Block.BlockType == BlockType.RoundRobin)
+        {
+            <table class="round-robin-table">
+                <tr>
+                    <th></th>
+                    @foreach (var team in teams)
+                    {
+                        <th>@team.Name</th>
+                    }
+                    <th>Victories</th>
+                    <th>Points</th>
+                    <th>Position</th>
+                </tr>
+
+                @foreach (var team in teams)
+                {
+                    <tr>
+                        <td>@team.Name</td>
+                        @for (int i = 0; i < teams.Count; i++)
+                        {
+                            Match m = GetRoundRobinMatch(team, teams[i]);
+                            if (m == null)
+                            {
+                                <td class="round-robin-invalid-match "> </td>
+                            }
+                            else
+                            {
+                                TeamMatchScore tms = m.TeamMatchScores.FirstOrDefault(x => x.Team.Id == team.Id);
+                                int mId = m.Id;
+                                <td @onmouseover="() => HightLightRoundRobinMatch(mId)"
+                                    @onmouseleave="() => HightLightRoundRobinMatch(-1)"
+                                    @onclick="() =>DisplayMatchScore(m)"
+                                    class=" @(highlightedMatchId == mId? "match-highlight":"")">
+                                    @if (m.Played)
+                                    {
+                                        @tms.Score
+                                    }
+                                </td>
+                            }
+                        }
+                        <td>@GetTeamVictoryCount(team)</td>
+                        <td>@GetTeamTotalScore(team)</td>
+                        <td>@GetTeamPosition(team)</td>
+                    </tr>
+                }
+            </table>
+        }
+
+        @if (Block.BlockType == BlockType.SingleElimination)
+        {
+            <SingleEliminationView Matches="matches"></SingleEliminationView>
+        }
+    }
+
+    <div id="lines">
+    </div>
+}
+
+@if (teamMatchScores != null)
+{
+    <MatchEnterScorePopup TeamMatchScores="teamMatchScores" OnPopUpClose="CloseTeamMatchScorePopup"></MatchEnterScorePopup>
+}
+
+@code {
+    [Parameter] public Block Block { get; set; }
+
+    private List<Team> teams;
+    private List<Match> matches;
+
+    private int highlightedMatchId;
+    private IBlock block;
+
+    private List<TeamMatchScoreSummary> teamMatchScoreSummaries;
+
+    private List<TeamMatchScore> teamMatchScores = null;
+
+    protected override void OnParametersSet()
+    {
+        if (Block == null)
+            return;
+        teamMatchScoreSummaries = new List<TeamMatchScoreSummary>();
+
+        LoadTeams();
+
+        //Make matches
+
+        //IBlock block = null;
+
+        switch (Block.BlockType)
+        {
+            case BlockType.RoundRobin:
+                block = new RoundRobinBlock(Block);
+                break;
+            case BlockType.SingleElimination:
+                block = new SingleEliminationBlock(Block);
+                break;
+        }
+
+        matches = context.Matches.Where(m => m.BlockId == Block.Id).Include(x => x.TeamMatchScores).ToList();
+        Block.Matches = matches;
+        teamMatchScoreSummaries = Block.GetTeamSummaries();
+
+        base.OnParametersSet();
+    }
+
+    private void LoadTeams()
+    {
+        List<TournamentTeam> tournamentTeams = context.TournamentTeams.Where(tt => tt.Tournament.Id == Block.Tournament.Id).ToList();
+        teams = new List<Team>();
+
+        OutputTeamEntity ote = context.OutputTeamEntities.FirstOrDefault(x => Block.InputTeamsEntityId == x.Id);
+
+        if (ote.BlockId == 0 && ote.ListManipulationId == 0)
+        {
+            //take tournament teams
+            foreach (var tt in tournamentTeams)
+            {
+                teams.Add(context.Teams.FirstOrDefault(t => t.Id == tt.TeamId));
+            }
+        }
+        else
+        {
+            if (ote.BlockId > 0)
+            {
+                Block prevBlock = context.Blocks.FirstOrDefault(x => x.Id == ote.BlockId);
+
+                switch (prevBlock.BlockType)
+                {
+                    //shouldnt happen, we'd be better put a listManipulation before and keep only one list
+                    case BlockType.Split:
+                        SplitBlock sb = (SplitBlock)prevBlock;
+                        teams = sb.GetOutputTeams()[0];
+                        break;
+                    case BlockType.RoundRobin:
+                        RoundRobinBlock rrb = new RoundRobinBlock(prevBlock);
+                        teams = rrb.GetOutputTeams()[0];
+                        break;
+                }
+            }
+            else if(ote.ListManipulationId > 0)
+            {
+                ListManipulation lm = context.ListManipulations.FirstOrDefault(x => x.Id == ote.ListManipulationId);
+
+
+                switch (lm.ListManipulationType)
+                {
+                    case ListManipulationType.Take4:
+
+                        OutputTeamEntity ote2 = context.OutputTeamEntities.FirstOrDefault(x => x.Id == lm.InputTeamsEntityAId);
+
+                        if (ote2.ListManipulationId > 0)
+                        {
+                            lm.InputTeamsEntityA = context.ListManipulations.FirstOrDefault(x => x.Id == lm.InputTeamsEntityAId);
+                        }
+                        if(ote2.BlockId > 0)
+                        {
+                            lm.InputTeamsEntityA = context.Blocks.FirstOrDefault(x => x.Id == lm.InputTeamsEntityAId).GetBlockTyped();
+                        }
+
+                        teams = lm.GetOutputTeams()[0];
+                        break;
+                }
+            }
+        }
+
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("window.registerViewportChangeCallback", DotNetObjectReference.Create(this));
+        }
+
+        await DrawLines();
+    }
+
+    [JSInvokable]
+    public void OnResize(int width, int height)
+    {
+        DrawLines();
+    }
+
+    private async Task DrawLines()
+    {
+        await JS.InvokeVoidAsync("clearLines");
+
+        List<MatchFlow> flows = context.MatchFlows.ToList();
+
+
+        foreach (var flow in flows)
+        {
+            if (!matches.Any(m => m.Id == flow.MatchId || m.Id == flow.ParentId))
+                continue;
+            string fromId, toId;
+
+            toId = "match" + flow.MatchId;
+            fromId = "match" + flow.ParentId;
+
+            await JS.InvokeVoidAsync("connectSE", fromId, toId, "black", 2);
+        }
+
+    }
+
+    private void HightLightRoundRobinMatch(int matchId)
+    {
+        highlightedMatchId = matchId;
+    }
+
+    private void GenerateMatches()
+    {
+        if (block != null)
+        {
+            LoadTeams();
+            matches = block.GenerateMatches(context, teams);
+            /*foreach (var match in matches)
+            {
+                match.BlockId = block.Id;
+
+
+            }
+
+            context.AddRange(matches);
+            context.SaveChanges();
+            foreach (var match in matches)
+            {
+                if (match.MatchChildren != null)
+                {
+                    foreach (var mc in match.MatchChildren)
+                    {
+                        mc.ParentId = mc.Parent.Id;
+                        mc.MatchId = mc.Match.Id;
+                    }
+                    context.AddRange(match.MatchChildren);
+                    context.SaveChanges();
+
+                    foreach (var mc in match.MatchChildren)
+                    {
+                        TeamMatchScore tms = new TeamMatchScore() { Match = matches.FirstOrDefault(x=>x.Id == mc.MatchId && mc.ParentId == match.Id), MatchFlowId = mc.Id };
+                        context.Add(tms);
+                        context.SaveChanges();
+                    }
+                }
+                else if (match.TeamMatchScores != null)
+                {
+                    context.AddRange(match.TeamMatchScores);
+                }
+            }
+            context.SaveChanges();*/
+        }
+    }
+
+    private Match GetRoundRobinMatch(Team a, Team b)
+    {
+        Match match = matches.FirstOrDefault(m => m.Teams.Any(t => t.Id == a.Id) && m.Teams.Any(t => t.Id == b.Id) && a.Id != b.Id);
+        return match;
+    }
+
+    private void DisplayMatchScore(Match match)
+    {
+        teamMatchScores = context.TeamMatchScores.Where(tms => tms.Match.Id == match.Id).ToList();
+    }
+
+    private void CloseTeamMatchScorePopup()
+    {
+        teamMatchScores = null;
+        OnParametersSet();
+        DrawLines();
+    }
+
+    private int GetTeamPosition(Team team)
+    {
+        var orderedList = teamMatchScoreSummaries.OrderByDescending(x => x.Victories).ThenBy(x => x.Scores).ToList();
+        return orderedList.FindIndex(x => x.TeamId == team.Id) + 1;
+    }
+
+    private int GetTeamVictoryCount(Team team)
+    {
+        @if (teamMatchScoreSummaries.FirstOrDefault(x => x.TeamId == team.Id) != null)
+            return teamMatchScoreSummaries.FirstOrDefault(x => x.TeamId == team.Id).Victories;
+        return 0;
+    }
+
+    private int GetTeamTotalScore(Team team)
+    {
+        @if (teamMatchScoreSummaries.FirstOrDefault(x => x.TeamId == team.Id) != null)
+            return teamMatchScoreSummaries.FirstOrDefault(x => x.TeamId == team.Id).Scores;
+        return 0;
+    }
+
+}

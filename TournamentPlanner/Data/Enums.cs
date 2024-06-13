@@ -25,6 +25,13 @@
     public enum ListManipulationType
     {
         MergeABAB,
-        MergeAABB
+        MergeAABB,
+        KeepA,
+        KeepB,
+        Take4,
+        Take8,
+        Tail,
+        Head,
+
     }
 }

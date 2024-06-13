@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TournamentPlanner.Data;
 
@@ -11,9 +12,11 @@ using TournamentPlanner.Data;
 namespace TournamentPlanner.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240610182509_AddedBlockIdToMatch")]
+    partial class AddedBlockIdToMatch
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -251,7 +254,7 @@ namespace TournamentPlanner.Migrations
 
                     b.HasIndex("TournamentId");
 
-                    b.ToTable("Blocks", (string)null);
+                    b.ToTable("Blocks");
                 });
 
             modelBuilder.Entity("TournamentPlanner.Data.Game", b =>
@@ -268,7 +271,7 @@ namespace TournamentPlanner.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Games", (string)null);
+                    b.ToTable("Games");
                 });
 
             modelBuilder.Entity("TournamentPlanner.Data.GameMode", b =>
@@ -300,7 +303,7 @@ namespace TournamentPlanner.Migrations
 
                     b.HasIndex("GameId");
 
-                    b.ToTable("GameModes", (string)null);
+                    b.ToTable("GameModes");
                 });
 
             modelBuilder.Entity("TournamentPlanner.Data.ListManipulation", b =>
@@ -337,7 +340,7 @@ namespace TournamentPlanner.Migrations
 
                     b.HasIndex("TournamentId");
 
-                    b.ToTable("ListManipulations", (string)null);
+                    b.ToTable("ListManipulations");
                 });
 
             modelBuilder.Entity("TournamentPlanner.Data.Map", b =>
@@ -362,7 +365,7 @@ namespace TournamentPlanner.Migrations
 
                     b.HasIndex("GameId");
 
-                    b.ToTable("Maps", (string)null);
+                    b.ToTable("Maps");
                 });
 
             modelBuilder.Entity("TournamentPlanner.Data.MapGameMode", b =>
@@ -385,7 +388,7 @@ namespace TournamentPlanner.Migrations
 
                     b.HasIndex("MapId");
 
-                    b.ToTable("MapGameModes", (string)null);
+                    b.ToTable("MapGameModes");
                 });
 
             modelBuilder.Entity("TournamentPlanner.Data.Match", b =>
@@ -399,7 +402,7 @@ namespace TournamentPlanner.Migrations
                     b.Property<int>("BlockId")
                         .HasColumnType("int");
 
-                    b.Property<int?>("MapGameModeId")
+                    b.Property<int>("MapGameModeId")
                         .HasColumnType("int");
 
                     b.Property<bool>("Played")
@@ -411,29 +414,7 @@ namespace TournamentPlanner.Migrations
 
                     b.HasIndex("MapGameModeId");
 
-                    b.ToTable("Matches", (string)null);
-                });
-
-            modelBuilder.Entity("TournamentPlanner.Data.MatchFlow", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("MatchId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("ParentId")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("Winner")
-                        .HasColumnType("bit");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("MatchFlows", (string)null);
+                    b.ToTable("Matches");
                 });
 
             modelBuilder.Entity("TournamentPlanner.Data.OutputTeamEntity", b =>
@@ -455,7 +436,7 @@ namespace TournamentPlanner.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("OutputTeamEntities", (string)null);
+                    b.ToTable("OutputTeamEntities");
                 });
 
             modelBuilder.Entity("TournamentPlanner.Data.Player", b =>
@@ -472,7 +453,7 @@ namespace TournamentPlanner.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Players", (string)null);
+                    b.ToTable("Players");
                 });
 
             modelBuilder.Entity("TournamentPlanner.Data.Team", b =>
@@ -489,7 +470,7 @@ namespace TournamentPlanner.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Teams", (string)null);
+                    b.ToTable("Teams");
                 });
 
             modelBuilder.Entity("TournamentPlanner.Data.TeamMatchScore", b =>
@@ -500,16 +481,13 @@ namespace TournamentPlanner.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("MatchFlowId")
-                        .HasColumnType("int");
-
                     b.Property<int>("MatchId")
                         .HasColumnType("int");
 
                     b.Property<int>("Score")
                         .HasColumnType("int");
 
-                    b.Property<int?>("TeamId")
+                    b.Property<int>("TeamId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
@@ -518,7 +496,7 @@ namespace TournamentPlanner.Migrations
 
                     b.HasIndex("TeamId");
 
-                    b.ToTable("TeamMatchScores", (string)null);
+                    b.ToTable("TeamMatchScores");
                 });
 
             modelBuilder.Entity("TournamentPlanner.Data.TeamPlayer", b =>
@@ -541,7 +519,7 @@ namespace TournamentPlanner.Migrations
 
                     b.HasIndex("TeamId");
 
-                    b.ToTable("TeamPlayers", (string)null);
+                    b.ToTable("TeamPlayers");
                 });
 
             modelBuilder.Entity("TournamentPlanner.Data.Tournament", b =>
@@ -566,7 +544,7 @@ namespace TournamentPlanner.Migrations
 
                     b.HasIndex("GameId");
 
-                    b.ToTable("Tournaments", (string)null);
+                    b.ToTable("Tournaments");
                 });
 
             modelBuilder.Entity("TournamentPlanner.Data.TournamentTeam", b =>
@@ -589,7 +567,7 @@ namespace TournamentPlanner.Migrations
 
                     b.HasIndex("TournamentId");
 
-                    b.ToTable("TournamentTeams", (string)null);
+                    b.ToTable("TournamentTeams");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -716,7 +694,9 @@ namespace TournamentPlanner.Migrations
 
                     b.HasOne("TournamentPlanner.Data.MapGameMode", "MapGameMode")
                         .WithMany()
-                        .HasForeignKey("MapGameModeId");
+                        .HasForeignKey("MapGameModeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("MapGameMode");
                 });
@@ -731,7 +711,9 @@ namespace TournamentPlanner.Migrations
 
                     b.HasOne("TournamentPlanner.Data.Team", "Team")
                         .WithMany()
-                        .HasForeignKey("TeamId");
+                        .HasForeignKey("TeamId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Match");
 

@@ -25,6 +25,134 @@
             });
         }
     </script>
+
+    <script>
+
+        function resize() {
+            console.log("resizing")
+            window.dispatchEvent(new Event('resize'));
+        }
+
+        function getById(id) {
+            const el = document.getElementById(id);
+            if (!el) throw Error(`cannot find #${id}`);
+            return el;
+        }
+
+
+        function getOffset(el) {
+            var rect = el.getBoundingClientRect();
+            return {
+                left: rect.left + window.pageXOffset,
+                top: rect.top + window.pageYOffset,
+                width: rect.width || el.offsetWidth,
+                height: rect.height || el.offsetHeight
+            };
+        }
+
+        function clearLines() {
+            document.getElementById("lines").innerHTML = "";
+        }
+
+        function connect(fromId, toId, color, thickness) { // draw a straight line connecting elements
+            var div1 = getById(fromId);
+            var div2 = getById(toId);
+
+            var off1 = getOffset(div1);
+            var off2 = getOffset(div2);
+            // middle right
+            var x1 = off1.left + off1.width;
+            var y1 = off1.top + off1.height / 2;
+            // middle left
+            var x2 = off2.left;
+            var y2 = off2.top + off2.height / 2;
+            // distance
+            var length = Math.sqrt(((x2 - x1) * (x2 - x1)) + ((y2 - y1) * (y2 - y1)));
+            // center
+            var cx = ((x1 + x2) / 2) - (length / 2);
+            var cy = ((y1 + y2) / 2) - (thickness / 2);
+            // angle
+            var angle = Math.atan2((y1 - y2), (x1 - x2)) * (180 / Math.PI);
+            // make hr
+            var htmlLine = "<div style='padding:0px; margin:0px; height:" + thickness + "px; background-color:" + color + "; line-height:1px; position:absolute; left:" + cx + "px; top:" + cy + "px; width:" + length + "px; -moz-transform:rotate(" + angle + "deg); -webkit-transform:rotate(" + angle + "deg); -o-transform:rotate(" + angle + "deg); -ms-transform:rotate(" + angle + "deg); transform:rotate(" + angle + "deg);' />";
+            //
+            // alert(htmlLine);
+            document.getElementById("lines").innerHTML += htmlLine;
+        }
+
+        function connectSE(fromId, toId, color, thickness) { // draw a straight line connecting elements
+            var div1 = getById(fromId);
+            var div2 = getById(toId);
+
+            var off1 = getOffset(div1);
+            var off2 = getOffset(div2);
+
+            //h line
+            // middle right from
+            var hx1 = off1.left + off1.width;
+            var hy1 = off1.top + off1.height / 2;
+            // middle left to
+            var hx2 = off2.left;
+            var hy2 = hy1 
+            hx2 = hx1 + (hx2 - hx1) / 2;//take the middle between both item
+
+            // distance
+            var length = Math.sqrt(((hx2 - hx1) * (hx2 - hx1)) + ((hy2 - hy1) * (hy2 - hy1)));
+            // center
+            var hcx = ((hx1 + hx2) / 2) - (length / 2);
+            var hcy = ((hy1 + hy2) / 2) - (thickness / 2);
+            // angle
+            var angle = Math.atan2((hy1 - hy2), (hx1 - hx2)) * (180 / Math.PI);
+            // make hr
+            var htmlLineH = "<div style='padding:0px; margin:0px; height:" + thickness + "px; background-color:" + color + "; line-height:1px; position:absolute; left:" + hcx + "px; top:" +hcy + "px; width:" + length + "px; -moz-transform:rotate(" + angle + "deg); -webkit-transform:rotate(" + angle + "deg); -o-transform:rotate(" + angle + "deg); -ms-transform:rotate(" + angle + "deg); transform:rotate(" + angle + "deg);' />";
+            //
+            // alert(htmlLine);
+            document.getElementById("lines").innerHTML += htmlLineH;
+
+            //v line
+            // middle right from
+            var vx1 = hx2;
+            var vy1 = off1.top + off1.height / 2;
+            // middle left to
+            var vx2 = hx2;
+            var vy2 = off2.top + off2.height / 2;
+            // distance
+            var length = Math.sqrt(((vx2 - vx1) * (vx2 - vx1)) + ((vy2 - vy1) * (vy2 - vy1)));
+            // center
+            var vcx = ((vx1 + vx2) / 2) - (length / 2);
+            var vcy = ((vy1 + vy2) / 2) - (thickness / 2);
+            // angle
+            var angle = Math.atan2((vy1 - vy2), (vx1 - vx2)) * (180 / Math.PI);
+            // make hr
+            var htmlLineV = "<div style='padding:0px; margin:0px; height:" + thickness + "px; background-color:" + color + "; line-height:1px; position:absolute; left:" + vcx + "px; top:" + vcy + "px; width:" + length + "px; -moz-transform:rotate(" + angle + "deg); -webkit-transform:rotate(" + angle + "deg); -o-transform:rotate(" + angle + "deg); -ms-transform:rotate(" + angle + "deg); transform:rotate(" + angle + "deg);' />";
+            //
+            // alert(htmlLine);
+            document.getElementById("lines").innerHTML += htmlLineV;
+
+            //h line
+            // middle right from
+            var hhx1 = hx2;
+            var hhy1 = vy2;
+            // middle left to
+            var hhx2 = off2.left
+            var hhy2 = vy2;
+            // distance
+            var length = Math.sqrt(((hhx2 - hhx1) * (hhx2 - hhx1)) + ((hhy2 - hhy1) * (hhy2 - hhy1)));
+            // center
+            var vcx = ((hhx1 + hhx2) / 2) - (length / 2);
+            var vcy = ((hhy1 + hhy2) / 2) - (thickness / 2);
+            // angle
+            var angle = Math.atan2((hhy1 - hhy2), (hhx1 - hhx2)) * (180 / Math.PI);
+            // make hr
+            var htmlLineV = "<div style='padding:0px; margin:0px; height:" + thickness + "px; background-color:" + color + "; line-height:1px; position:absolute; left:" + vcx + "px; top:" + vcy + "px; width:" + length + "px; -moz-transform:rotate(" + angle + "deg); -webkit-transform:rotate(" + angle + "deg); -o-transform:rotate(" + angle + "deg); -ms-transform:rotate(" + angle + "deg); transform:rotate(" + angle + "deg);' />";
+            //
+            // alert(htmlLine);
+            document.getElementById("lines").innerHTML += htmlLineV;
+
+        }
+
+
+    </script>
 </body>
 
 </html>

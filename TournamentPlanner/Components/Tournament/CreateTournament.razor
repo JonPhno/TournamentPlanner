@@ -90,7 +90,7 @@
         context.Add(tournament);
         foreach (var team in checkedTeams)
         {
-            context.Add(new TournamentTeam() { Team = team, Tournament = tournament });
+            context.Add(new TournamentTeam() { Team = team, TeamId = team.Id, Tournament = tournament, TournamentId = tournament.Id });
         }
 
 
