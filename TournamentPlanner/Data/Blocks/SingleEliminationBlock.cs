@@ -1,4 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore.Metadata.Conventions;
+using Microsoft.Extensions.FileSystemGlobbing;
+using System.Linq;
+using TournamentPlanner.Components.Pages;
 using TournamentPlanner.Data.Interfaces;
 
 namespace TournamentPlanner.Data.Blocks
@@ -26,25 +29,81 @@ namespace TournamentPlanner.Data.Blocks
                 BiggestPowerOf2 = i;
             }
 
-            teams = teams.Take(BiggestPowerOf2).ToList();
 
-            for (int i = 0; i < teams.Count / 2; i++)
+            int numberOfTeamToTrim = teams.Count - BiggestPowerOf2;
+            List<Match> trimMatches = new List<Match>();
+
+
+            if (numberOfTeamToTrim > 0) //more teams that need to be reduced
             {
-                int j = teams.Count - 1 - i;
-                Match match = new Match();
-                match.TeamMatchScores = new List<TeamMatchScore>();
-                TeamMatchScore tms = new TeamMatchScore() { Team = teams[i], Match = match };
-                match.TeamMatchScores.Add(tms);
-                tms = new TeamMatchScore() { Team = teams[j], Match = match };
-                match.TeamMatchScores.Add(tms);
-                match.BlockId = Id;
-                matches.Add(match);
+                List<Team> lastTeams = ReorderTeams(teams.TakeLast(numberOfTeamToTrim * 2).ToList());
+
+                for (int i = 0; i < lastTeams.Count; i += 2)
+                {
+                    int j = i + 1;
+                    Match match = CreateMatchWithoutPredecessor(lastTeams[i], lastTeams[j]);
+                    trimMatches.Add(match);
+                }
+            }
+            /*if (teams.Count % 2 == 0)
+            {
+                teams = ReorderTeams(teams);
+            }
+            else
+            {
+                teams = ReorderTeams(teams.Take(teams.Count-1).ToList());
+            }*/
+
+            teams = ReorderTeams(teams.Take(BiggestPowerOf2).ToList());
+
+            for (int i = 0; i < teams.Count; i += 2)
+            {
+                int j = i + 1;
+                if (trimMatches.Count != 0
+                   && (trimMatches.Any(m => m.TeamMatchScores.FirstOrDefault(x => x.Team.Id == teams[i].Id) != null)
+                   || trimMatches.Any(m => m.TeamMatchScores.FirstOrDefault(x => x.Team.Id == teams[j].Id) != null))
+                    )
+                {
+                    Match pre = trimMatches.FirstOrDefault(m => m.TeamMatchScores.FirstOrDefault(x => x.Team.Id == teams[i].Id) != null);
+                    Team team = teams[j];
+
+                    if (pre == null)
+                    {
+                        pre = trimMatches.FirstOrDefault(m => m.TeamMatchScores.FirstOrDefault(x => x.Team.Id == teams[j].Id) != null);
+                        team = teams[i];
+                    }
+
+                    Match match = new Match();
+                    match.BlockId = Id;
+
+                    MatchFlow flow = new MatchFlow() { Match = match, MatchId = match.Id, Parent = pre, ParentId = pre.Id, Winner = true };
+
+                    context.Add(flow);
+                    context.SaveChanges();
+
+                    TeamMatchScore tms = new TeamMatchScore() { Match = match, Team = team };
+                    TeamMatchScore tms2 = new TeamMatchScore() { Match = match, MatchFlowId = flow.Id };
+
+                    pre.MatchChildren = new List<MatchFlow>();
+                    pre.MatchChildren.Add(flow);
+
+                    match.TeamMatchScores = new List<TeamMatchScore> { tms, tms2 };
+
+                    match.MatchParents = new List<MatchFlow>();
+                    match.MatchParents.Add(flow);
+
+                    matches.Add(match);
+                }
+                else
+                {
+                    Match match = CreateMatchWithoutPredecessor(teams[i], teams[j]);
+                    matches.Add(match);
+                }
             }
 
             int numberOfRounds = (int)Math.Log2(BiggestPowerOf2);
 
             List<List<Match>> rounds = new List<List<Match>>();
-
             rounds.Add(matches);
             for (int i = 0; i < numberOfRounds - 1; i++)
             {
@@ -89,6 +148,8 @@ namespace TournamentPlanner.Data.Blocks
 
             Matches = new List<Match>();
 
+            Matches.AddRange(trimMatches);
+
             foreach (var round in rounds)
             {
                 Matches.AddRange(round);
@@ -111,6 +172,68 @@ namespace TournamentPlanner.Data.Blocks
             }
             context.SaveChanges();
             return Matches;
+        }
+
+        private List<Team> ReorderTeams(List<Team> teams)
+        {
+            List<Team> result = new List<Team>();
+            List<Team> result2 = new List<Team>();
+
+            bool alternate = true;
+
+            while (teams.Count > 0)
+            {
+
+                Team teamA = teams.First();
+                Team teamB = teams.Last();
+
+                if (alternate)
+                {
+                    result.Add(teamA);
+                    result.Add(teamB);
+                }
+                else
+                {
+                    result2.Add(teamA);
+                    result2.Add(teamB);
+                }
+
+                teams.Remove(teamA);
+                teams.Remove(teamB);
+                alternate = !alternate;
+            }
+
+            for (int i = result2.Count - 1; i >= 0; i--)
+            {
+                result.Add(result2[i]);
+            }
+
+
+            return result;
+        }
+
+        private Match CreateMatchWithoutPredecessor(Team teamA, Team teamB)
+        {
+            Match match = new Match();
+            match.TeamMatchScores = new List<TeamMatchScore>();
+            TeamMatchScore tms = new TeamMatchScore() { Team = teamA, Match = match };
+            match.TeamMatchScores.Add(tms);
+            tms = new TeamMatchScore() { Team = teamB, Match = match };
+            match.TeamMatchScores.Add(tms);
+            match.BlockId = Id;
+            return match;
+        }
+
+        private Match CreateMatchWithPredecessor(Team teamA, Team teamB, Match m1, Match m2)
+        {
+            Match match = new Match();
+            match.TeamMatchScores = new List<TeamMatchScore>();
+            TeamMatchScore tms = new TeamMatchScore() { Team = teamA, Match = match };
+            match.TeamMatchScores.Add(tms);
+            tms = new TeamMatchScore() { Team = teamB, Match = match };
+            match.TeamMatchScores.Add(tms);
+            match.BlockId = Id;
+            return match;
         }
     }
 }

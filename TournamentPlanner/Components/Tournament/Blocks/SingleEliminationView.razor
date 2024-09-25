@@ -16,6 +16,7 @@
     int matchIndex = 0;
     int totalMatches = Matches.Count;
     int rounds = (int)Math.Log2(Matches.Count + 1);
+    int trimMatches = Matches.Count - ((int)Math.Pow(2, rounds) - 1);
     int numberOfMatchThisRound = (int)Math.Pow(2, rounds - 1);
     bool startRound = true;
     bool endRound = false;
@@ -24,7 +25,18 @@
 
         @for (round = 1; round <= rounds; round++)
         {
-            numberOfMatchThisRound = (int)Math.Pow(2, rounds - (round));
+            if (round == 1 && trimMatches > 0)
+            {
+                numberOfMatchThisRound = trimMatches;
+                trimMatches = 0;
+                round = 0;
+            }
+            else
+            {
+                numberOfMatchThisRound = (int)Math.Pow(2, rounds - (round));
+
+            }
+
             <div class="round-list">
                 @for (int i = matchIndex; i < matchIndex + numberOfMatchThisRound; i++)
                 {
@@ -32,6 +44,7 @@
                     <TournamentMatch Match="match" OpenTeamMatchScore="(args) => OpenTeamMatchScore(args)"> </TournamentMatch>
                 }
             </div>
+
 
             matchIndex += numberOfMatchThisRound;
         }
@@ -52,7 +65,7 @@
 
     private void OpenTeamMatchScore(int matchId)
     {
-        teamMatchScores = context.TeamMatchScores.Include(x=>x.Team).Where(x => x.Match.Id == matchId).ToList();
+        teamMatchScores = context.TeamMatchScores.Include(x => x.Team).Where(x => x.Match.Id == matchId).ToList();
     }
 
     private async Task CloseTeamMatchScorePopup()
